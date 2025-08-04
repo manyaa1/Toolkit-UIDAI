@@ -29,7 +29,7 @@ Ensure the following are installed in your system:
 
 ```bash
 # 1️⃣ Clone the repo
-git clone https://github.com/manyaa1/Project-PPO.git
+git clone https://github.com/manyaa1/Toolkit-UIDAI.git
 
 # 2️⃣ Navigate to project directory
 
