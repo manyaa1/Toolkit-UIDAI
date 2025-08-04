@@ -1,0 +1,1558 @@
+//dashboard-redux.js
+import React, { useEffect, useCallback, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useSelector, useDispatch } from "react-redux";
+import * as XLSX from "xlsx";
+
+// Redux Actions
+import {
+  processExcelFile,
+  loadExcelFromMemory,
+  setActiveSheet,
+  clearData as clearExcelData,
+} from "../store/slice/excelSlice";
+
+import {
+  storeAMCCalculations,
+  loadAMCFromMemory,
+  clearData,
+} from "../store/slice/amcScheduleSlice";
+
+import {
+  storeWarrantyCalculations,
+  loadWarrantyFromMemory,
+  clearWarrantyData,
+} from "../store/slice/warrantyDataSlice";
+
+import {
+  setHoveredCard,
+  setHoveredButton,
+  setHoveredLink,
+  setIsMobile,
+  setCurrentTime,
+  setSearchTerm,
+  setSelectedCategory,
+  toggleNotifications,
+  updateStats,
+  toggleDarkMode,
+  toggleQuickTips,
+  setCurrentTip,
+  nextTip,
+  setShowSearch,
+  toggleSearch,
+} from "../store/slice/dashboardSlice";
+
+// Redux Selectors
+import {
+  selectExcelData,
+  selectFileName,
+  selectSheets,
+  selectActiveSheet,
+  selectIsLoading,
+  selectError,
+  selectUploadHistory,
+  selectHasData,
+  selectTotalRows,
+  selectSheetData,
+} from "../store/selectors/excelSelectors";
+
+import {
+  selectAMCCalculations,
+  selectAMCMetadata,
+  selectAMCHistory,
+  selectAMCIsProcessing,
+  selectHasAMCData,
+  selectTotalAMCAssets,
+  selectTotalAMCValue,
+  selectAMCCalculationsForPayments,
+} from "../store/selectors/amcDataSelectors";
+
+import {
+  selectWarrantyCalculations,
+  selectWarrantyMetadata,
+  selectWarrantyHistory,
+  selectWarrantyIsProcessing,
+  selectHasWarrantyData,
+  selectTotalWarrantyAssets,
+  selectTotalWarrantyValue,
+  selectWarrantyCalculationsForPayments,
+} from "../store/selectors/warrantyDataSelectors";
+
+import {
+  selectHoveredCard,
+  selectHoveredButton,
+  selectHoveredLink,
+  selectIsMobile,
+  selectCurrentTime,
+  selectSearchTerm,
+  selectSelectedCategory,
+  selectNotifications,
+  selectShowNotifications,
+  selectStats,
+  selectIsDarkMode,
+  selectShowQuickTips,
+  selectCurrentTip,
+  selectShowSearch,
+  selectRecentActivity,
+  selectFilteredTools,
+} from "../store/selectors/dashboardSelectors";
+
+// ================================
+// EXCEL UPLOAD SECTION COMPONENT (Redux Version)
+// ================================
+const ExcelUploadSection = () => {
+  const dispatch = useDispatch();
+
+  // Excel selectors
+  const excelData = useSelector(selectExcelData);
+  const fileName = useSelector(selectFileName);
+  const sheets = useSelector(selectSheets);
+  const isLoading = useSelector(selectIsLoading);
+  const error = useSelector(selectError);
+  const hasData = useSelector(selectHasData);
+  const totalRows = useSelector(selectTotalRows);
+
+  // AMC selectors
+  const hasAMCData = useSelector(selectHasAMCData);
+  const totalAMCAssets = useSelector(selectTotalAMCAssets);
+  const totalAMCValue = useSelector(selectTotalAMCValue);
+
+  // Warranty selectors
+  const hasWarrantyData = useSelector(selectHasWarrantyData);
+  const totalWarrantyAssets = useSelector(selectTotalWarrantyAssets);
+  const totalWarrantyValue = useSelector(selectTotalWarrantyValue);
+
+  const [dragActive, setDragActive] = useState(false);
+
+  const handleFile = useCallback(
+    async (file) => {
+      if (!file) {
+        console.error("❌ No file provided to handleFile");
+        return;
+      }
+
+      console.log("📁 File received:", {
+        name: file.name,
+        size: file.size,
+        type: file.type,
+        lastModified: new Date(file.lastModified).toISOString(),
+      });
+
+      const validTypes = [
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "application/vnd.ms-excel",
+        ".xlsx",
+        ".xls",
+      ];
+
+      const isValidType = validTypes.some(
+        (type) => file.type === type || file.name.toLowerCase().endsWith(type)
+      );
+
+      if (!isValidType) {
+        console.error("❌ Invalid file type:", file.type);
+        alert("Please upload a valid Excel file (.xlsx or .xls)");
+        return;
+      }
+
+      console.log("✅ File type validation passed");
+      console.log("🚀 Dispatching processExcelFile action...");
+
+      try {
+        // Dispatch the action and wait for it to complete
+        const result = await dispatch(processExcelFile(file));
+        console.log("📊 processExcelFile result:", result);
+
+        // Check if the action was successful
+        if (result.type && result.type.endsWith("/fulfilled")) {
+          console.log("🎉 FILE UPLOADED SUCCESSFULLY! 🎉");
+          console.log("📈 Excel data processed and stored in Redux store");
+
+          // Show success notification
+          alert("✅ File uploaded successfully!");
+        } else if (result.type && result.type.endsWith("/rejected")) {
+          console.error("❌ File upload failed:", result.error);
+        }
+      } catch (error) {
+        console.error("❌ Error during file processing:", error);
+      }
+    },
+    [dispatch]
+  );
+
+  // Add useEffect to monitor state changes
+  useEffect(() => {
+    console.log("📊 Excel state updated:", {
+      hasData,
+      fileName,
+      sheetsCount: sheets?.length || 0,
+      totalRows,
+      isLoading,
+      error,
+    });
+
+    if (hasData && fileName) {
+      console.log("🎯 Excel data is now available in Redux store!");
+      console.log(
+        "📋 Available sheets:",
+        sheets.map((sheet) => sheet.name)
+      );
+    }
+  }, [hasData, fileName, sheets, totalRows, isLoading, error]);
+
+  const handleDrag = useCallback((e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    console.log("📁 Drag event:", e.type);
+
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActive(true);
+    } else if (e.type === "dragleave") {
+      setDragActive(false);
+    }
+  }, []);
+
+  const handleDrop = useCallback(
+    (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setDragActive(false);
+
+      console.log("📁 File dropped!");
+      console.log("📁 Files in drop:", e.dataTransfer.files.length);
+
+      if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+        console.log("📁 Processing dropped file...");
+        handleFile(e.dataTransfer.files[0]);
+      } else {
+        console.error("❌ No files found in drop event");
+      }
+    },
+    [handleFile]
+  );
+
+  const handleFileInput = useCallback(
+    (e) => {
+      console.log("📁 File input changed");
+      console.log("📁 Files selected:", e.target.files?.length || 0);
+
+      if (e.target.files && e.target.files[0]) {
+        console.log("📁 Processing selected file...");
+        handleFile(e.target.files[0]);
+      } else {
+        console.error("❌ No files found in file input");
+      }
+    },
+    [handleFile]
+  );
+
+  const handleClearAllData = useCallback(() => {
+    if (
+      window.confirm(
+        "Are you sure you want to clear all data? This will remove Excel files, AMC calculations, and Warranty calculations."
+      )
+    ) {
+      console.log("🗑️ Clearing all data...");
+      dispatch(clearExcelData());
+      dispatch(clearData());
+      dispatch(clearWarrantyData());
+      console.log("✅ All data cleared");
+    }
+  }, [dispatch]);
+
+  return (
+    <div
+      style={{
+        background: "rgba(255, 255, 255, 0.95)",
+        backdropFilter: "blur(20px)",
+        borderRadius: "20px",
+        padding: "32px",
+        marginBottom: "40px",
+        border: "1px solid rgba(255, 255, 255, 0.2)",
+        boxShadow: "0 20px 40px -12px rgba(0, 0, 0, 0.15)",
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          marginBottom: "24px",
+        }}
+      >
+        <div>
+          <h3
+            style={{
+              fontSize: "1.5rem",
+              fontWeight: 700,
+              color: "#1e293b",
+              marginBottom: "8px",
+            }}
+          >
+            📊 Global Data Management Hub
+          </h3>
+          <p
+            style={{
+              color: "#64748b",
+              fontSize: "0.95rem",
+              margin: 0,
+            }}
+          >
+            Centralized data storage for Excel files, AMC calculations, and
+            Warranty calculations
+          </p>
+        </div>
+        {(hasData || hasAMCData || hasWarrantyData) && (
+          <button
+            onClick={handleClearAllData}
+            style={{
+              padding: "8px 16px",
+              backgroundColor: "#ef4444",
+              color: "white",
+              border: "none",
+              borderRadius: "8px",
+              fontSize: "0.875rem",
+              cursor: "pointer",
+              transition: "all 0.2s ease",
+            }}
+          >
+            Clear All Data
+          </button>
+        )}
+      </div>
+
+      {/* Data Status Grid */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+          gap: "16px",
+          marginBottom: "24px",
+        }}
+      >
+        {/* Excel Data Status */}
+        <div
+          style={{
+            padding: "16px",
+            backgroundColor: hasData ? "#f0fdf4" : "#f8fafc",
+            border: `1px solid ${hasData ? "#bbf7d0" : "#e2e8f0"}`,
+            borderRadius: "12px",
+          }}
+        >
+          <div style={{ fontSize: "1.5rem", marginBottom: "8px" }}>
+            {hasData ? "📊" : "📄"}
+          </div>
+          <h4
+            style={{
+              fontSize: "0.9rem",
+              fontWeight: 600,
+              marginBottom: "4px",
+              color: "#1e293b",
+            }}
+          >
+            Excel Files
+          </h4>
+          <p style={{ fontSize: "0.8rem", color: "#64748b", margin: 0 }}>
+            {hasData
+              ? `${sheets.length} sheets, ${totalRows.toLocaleString()} rows`
+              : "No files uploaded"}
+          </p>
+          {/* Debug info */}
+          <p
+            style={{
+              fontSize: "0.7rem",
+              color: "#9ca3af",
+              margin: "4px 0 0 0",
+            }}
+          >
+            Debug:{" "}
+            {isLoading ? "Loading..." : hasData ? "Data loaded" : "No data"}
+          </p>
+        </div>
+
+        {/* AMC Data Status */}
+        <div
+          style={{
+            padding: "16px",
+            backgroundColor: hasAMCData ? "#eff6ff" : "#f8fafc",
+            border: `1px solid ${hasAMCData ? "#bfdbfe" : "#e2e8f0"}`,
+            borderRadius: "12px",
+          }}
+        >
+          <div style={{ fontSize: "1.5rem", marginBottom: "8px" }}>
+            {hasAMCData ? "🔧" : "⚙️"}
+          </div>
+          <h4
+            style={{
+              fontSize: "0.9rem",
+              fontWeight: 600,
+              marginBottom: "4px",
+              color: "#1e293b",
+            }}
+          >
+            AMC Calculations
+          </h4>
+          <p style={{ fontSize: "0.8rem", color: "#64748b", margin: 0 }}>
+            {hasAMCData
+              ? `${totalAMCAssets} assets, ₹${totalAMCValue.toLocaleString()}`
+              : "No calculations stored"}
+          </p>
+        </div>
+
+        {/* Warranty Data Status */}
+        <div
+          style={{
+            padding: "16px",
+            backgroundColor: hasWarrantyData ? "#fef3c7" : "#f8fafc",
+            border: `1px solid ${hasWarrantyData ? "#fcd34d" : "#e2e8f0"}`,
+            borderRadius: "12px",
+          }}
+        >
+          <div style={{ fontSize: "1.5rem", marginBottom: "8px" }}>
+            {hasWarrantyData ? "🛡️" : "🔒"}
+          </div>
+          <h4
+            style={{
+              fontSize: "0.9rem",
+              fontWeight: 600,
+              marginBottom: "4px",
+              color: "#1e293b",
+            }}
+          >
+            Warranty Calculations
+          </h4>
+          <p style={{ fontSize: "0.8rem", color: "#64748b", margin: 0 }}>
+            {hasWarrantyData
+              ? `${totalWarrantyAssets} assets, ₹${totalWarrantyValue.toLocaleString()}`
+              : "No calculations stored"}
+          </p>
+        </div>
+      </div>
+
+      {/* Excel Upload Area */}
+      <div
+        style={{
+          border: `2px dashed ${dragActive ? "#3b82f6" : "#cbd5e1"}`,
+          borderRadius: "12px",
+          padding: "32px",
+          textAlign: "center",
+          backgroundColor: dragActive
+            ? "#f0f9ff"
+            : hasData
+            ? "#f0fdf4"
+            : "#f8fafc",
+          transition: "all 0.3s ease",
+          position: "relative",
+        }}
+        onDragEnter={handleDrag}
+        onDragLeave={handleDrag}
+        onDragOver={handleDrag}
+        onDrop={handleDrop}
+      >
+        {isLoading ? (
+          <div>
+            <div style={{ fontSize: "2rem", marginBottom: "16px" }}>⏳</div>
+            <p style={{ color: "#3b82f6", fontWeight: 600 }}>
+              Processing Excel file...
+            </p>
+            <p style={{ fontSize: "0.8rem", color: "#64748b" }}>
+              Please wait while we process your file
+            </p>
+          </div>
+        ) : hasData ? (
+          <div>
+            <div style={{ fontSize: "2rem", marginBottom: "16px" }}>✅</div>
+            <p
+              style={{ color: "#059669", fontWeight: 600, marginBottom: "8px" }}
+            >
+              Excel File Loaded Successfully
+            </p>
+            <p
+              style={{
+                color: "#6b7280",
+                fontSize: "0.9rem",
+                marginBottom: "12px",
+              }}
+            >
+              {fileName}
+            </p>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "center",
+                gap: "24px",
+                marginBottom: "16px",
+                flexWrap: "wrap",
+              }}
+            >
+              <div
+                style={{
+                  backgroundColor: "white",
+                  padding: "12px 20px",
+                  borderRadius: "8px",
+                  border: "1px solid #e2e8f0",
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: "1.25rem",
+                    fontWeight: 700,
+                    color: "#3b82f6",
+                  }}
+                >
+                  {sheets.length}
+                </div>
+                <div style={{ fontSize: "0.8rem", color: "#64748b" }}>
+                  Sheets
+                </div>
+              </div>
+              <div
+                style={{
+                  backgroundColor: "white",
+                  padding: "12px 20px",
+                  borderRadius: "8px",
+                  border: "1px solid #e2e8f0",
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: "1.25rem",
+                    fontWeight: 700,
+                    color: "#059669",
+                  }}
+                >
+                  {totalRows.toLocaleString()}
+                </div>
+                <div style={{ fontSize: "0.8rem", color: "#64748b" }}>
+                  Total Rows
+                </div>
+              </div>
+            </div>
+            <button
+              onClick={() => {
+                console.log("📁 User clicked to upload different file");
+                document.getElementById("excel-file-input").click();
+              }}
+              style={{
+                padding: "8px 16px",
+                backgroundColor: "#3b82f6",
+                color: "white",
+                border: "none",
+                borderRadius: "6px",
+                cursor: "pointer",
+                fontSize: "0.875rem",
+              }}
+            >
+              Upload Different File
+            </button>
+          </div>
+        ) : (
+          <div>
+            <div style={{ fontSize: "2rem", marginBottom: "16px" }}>📊</div>
+            <p
+              style={{
+                fontSize: "1.1rem",
+                fontWeight: 600,
+                marginBottom: "8px",
+                color: "#374151",
+              }}
+            >
+              Upload Excel File
+            </p>
+            <p
+              style={{
+                color: "#6b7280",
+                marginBottom: "16px",
+                fontSize: "0.9rem",
+              }}
+            >
+              Drag and drop your Excel file here, or click to browse
+            </p>
+            <button
+              onClick={() => {
+                console.log("📁 User clicked to choose file");
+                document.getElementById("excel-file-input").click();
+              }}
+              style={{
+                padding: "12px 24px",
+                backgroundColor: "#3b82f6",
+                color: "white",
+                border: "none",
+                borderRadius: "8px",
+                cursor: "pointer",
+                fontSize: "0.9rem",
+                fontWeight: 600,
+                transition: "all 0.2s ease",
+              }}
+            >
+              Choose File
+            </button>
+          </div>
+        )}
+
+        <input
+          id="excel-file-input"
+          type="file"
+          accept=".xlsx,.xls"
+          onChange={handleFileInput}
+          style={{ display: "none" }}
+        />
+      </div>
+
+      {error && (
+        <div
+          style={{
+            marginTop: "16px",
+            padding: "12px",
+            backgroundColor: "#fef2f2",
+            border: "1px solid #fecaca",
+            borderRadius: "8px",
+            color: "#dc2626",
+            fontSize: "0.875rem",
+          }}
+        >
+          <strong>Error:</strong> {error}
+        </div>
+      )}
+
+      {/* Data Flow Information */}
+      {(hasData || hasAMCData || hasWarrantyData) && (
+        <div
+          style={{
+            marginTop: "24px",
+            padding: "16px",
+            backgroundColor: "#f0f9ff",
+            border: "1px solid #bfdbfe",
+            borderRadius: "12px",
+          }}
+        >
+          <h4
+            style={{
+              fontSize: "0.9rem",
+              fontWeight: 600,
+              marginBottom: "12px",
+              color: "#1e293b",
+            }}
+          >
+            🔄 Data Flow Status
+          </h4>
+          <div
+            style={{ fontSize: "0.8rem", color: "#64748b", lineHeight: 1.6 }}
+          >
+            <p style={{ margin: "4px 0" }}>
+              • <strong>Excel Files:</strong>{" "}
+              {hasData
+                ? "Available for AMC/Warranty calculations"
+                : "Upload required"}
+            </p>
+            <p style={{ margin: "4px 0" }}>
+              • <strong>AMC Calculations:</strong>{" "}
+              {hasAMCData
+                ? "Ready for Payment Tracker"
+                : "Run AMC Calculator first"}
+            </p>
+            <p style={{ margin: "4px 0" }}>
+              • <strong>Warranty Calculations:</strong>{" "}
+              {hasWarrantyData
+                ? "Ready for Payment Tracker"
+                : "Run Warranty Calculator first"}
+            </p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+// ================================
+// MAIN DASHBOARD COMPONENT (Redux Version)
+// ================================
+function EnhancedUIDAIDashboard() {
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+
+  // Dashboard selectors
+  const hoveredCard = useSelector(selectHoveredCard);
+  const hoveredButton = useSelector(selectHoveredButton);
+  const hoveredLink = useSelector(selectHoveredLink);
+  const isMobile = useSelector(selectIsMobile);
+  const currentTime = useSelector(selectCurrentTime);
+  const searchTerm = useSelector(selectSearchTerm);
+  const selectedCategory = useSelector(selectSelectedCategory);
+  const notifications = useSelector(selectNotifications);
+  const showNotifications = useSelector(selectShowNotifications);
+  const stats = useSelector(selectStats);
+  const isDarkMode = useSelector(selectIsDarkMode);
+  const showQuickTips = useSelector(selectShowQuickTips);
+  const currentTip = useSelector(selectCurrentTip);
+  const showSearch = useSelector(selectShowSearch);
+  const recentActivity = useSelector(selectRecentActivity);
+
+  // Data selectors for global context
+  const hasExcelData = useSelector(selectHasData);
+  const hasAMCData = useSelector(selectHasAMCData);
+  const totalAMCAssets = useSelector(selectTotalAMCAssets);
+  const totalAMCValue = useSelector(selectTotalAMCValue);
+  const hasWarrantyData = useSelector(selectHasWarrantyData);
+  const totalWarrantyAssets = useSelector(selectTotalWarrantyAssets);
+  const totalWarrantyValue = useSelector(selectTotalWarrantyValue);
+
+  const quickTips = [
+    "Use the search feature to quickly find specific tools and features",
+    "Export your calculations directly to Excel from any tool",
+    "Set up notifications for important payment deadlines",
+    "Use keyboard shortcuts: Ctrl+K for search, Ctrl+D for dashboard",
+    "AMC calculations are automatically saved and available in Payment Tracker",
+    "Upload Excel files once to use across all calculation tools",
+  ];
+
+  useEffect(() => {
+    const savedExcel = localStorage.getItem("excelData");
+    const savedAMC = localStorage.getItem("amcData");
+    const savedWarranty = localStorage.getItem("warrantyData");
+
+    if (savedExcel) dispatch(loadExcelFromMemory());
+    if (savedAMC) dispatch(loadAMCFromMemory());
+    if (savedWarranty) dispatch(loadWarrantyFromMemory());
+  }, [dispatch]);
+
+  // Initialize responsive behavior and real-time clock
+  useEffect(() => {
+    const handleResize = () => {
+      dispatch(setIsMobile(window.innerWidth <= 768));
+    };
+
+    const updateTime = () => {
+      const time = new Date().toLocaleTimeString("en-IN", {
+        timeZone: "Asia/Kolkata",
+        hour12: true,
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+      dispatch(setCurrentTime(time));
+    };
+
+    // Initialize
+    handleResize();
+    updateTime();
+
+    // Set up event listeners
+    window.addEventListener("resize", handleResize);
+    const timeInterval = setInterval(updateTime, 1000);
+
+    // Simulate real-time stats updates
+    const statsInterval = setInterval(() => {
+      dispatch(
+        updateStats({
+          usersOnline: stats.usersOnline + Math.floor(Math.random() * 10) - 5,
+          tasksCompleted: stats.tasksCompleted + Math.floor(Math.random() * 3),
+        })
+      );
+    }, 30000);
+
+    // Auto-rotate tips
+    const tipsInterval = setInterval(() => {
+      dispatch(nextTip());
+    }, 5000);
+
+    // Cleanup
+    return () => {
+      window.removeEventListener("resize", handleResize);
+      clearInterval(timeInterval);
+      clearInterval(statsInterval);
+      clearInterval(tipsInterval);
+    };
+  }, [dispatch, stats.usersOnline, stats.tasksCompleted]);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyPress = (e) => {
+      if (e.ctrlKey && e.key === "k") {
+        e.preventDefault();
+        dispatch(setShowSearch(true));
+      }
+      if (e.key === "Escape") {
+        dispatch(setShowSearch(false));
+        dispatch(toggleNotifications());
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyPress);
+    return () => window.removeEventListener("keydown", handleKeyPress);
+  }, [dispatch]);
+
+  // Navigation handler for tool cards
+  const handleNavigation = useCallback(
+    (path, toolName) => {
+      console.log(`🚀 Attempting to navigate to ${toolName}: ${path}`);
+      console.log(`🚀 Current location:`, window.location.href);
+      try {
+        navigate(path);
+        console.log(`✅ Navigation call successful for ${toolName}`);
+      } catch (error) {
+        console.error(`❌ Navigation failed for ${toolName}:`, error);
+      }
+    },
+    [navigate]
+  );
+
+  // Tool data for filtering - Enhanced with data availability indicators
+  // Tool data for filtering - Enhanced with data availability indicators
+  const tools = [
+    {
+      id: "amc",
+      title: "AMC Calculator",
+      category: "financial",
+      description:
+        "Enhanced AMC calculator with Web Workers, virtual scrolling, and intelligent caching for 100k+ products.",
+      icon: "📊",
+      path: "/enhanced-amc-calculator",
+      tag: "Financial Planning",
+      dataStatus: hasExcelData ? "ready" : "needs-data",
+      statusText: hasExcelData
+        ? "Excel data available"
+        : "Upload Excel file first",
+    },
+    {
+      id: "warranty",
+      title: "Warranty Estimator",
+      category: "risk",
+      description:
+        "Comprehensive warranty period estimation with coverage analysis, geographical mapping, and automated notification systems.",
+      icon: "🛡️",
+      path: "/warranty-calculator",
+      tag: "Risk Management",
+      dataStatus: hasExcelData ? "ready" : "needs-data",
+      statusText: hasExcelData
+        ? "Excel data available"
+        : "Upload Excel file first",
+    },
+    {
+      id: "payment",
+      title: "AMC Payment Tracker",
+      category: "financial",
+      description:
+        "Comprehensive AMC payment tracking system with real-time transaction monitoring and automated invoice generation.",
+      icon: "💳",
+      path: "/payment-tracker",
+      tag: "Financial Monitoring",
+      dataStatus: hasAMCData ? "ready" : "needs-calculations",
+      statusText: hasAMCData
+        ? `${totalAMCAssets} AMC records available`
+        : "Run AMC Calculator first",
+    },
+    {
+      id: "warranty-tracker",
+      title: "Warranty Payment Tracker",
+      category: "financial",
+      description:
+        "Comprehensive warranty payment tracking system with real-time transaction monitoring and automated invoice generation.",
+      icon: "🔍",
+      path: "/warranty-payment-tracker",
+      tag: "Financial Monitoring",
+      dataStatus: hasWarrantyData ? "ready" : "needs-calculations",
+      statusText: hasWarrantyData
+        ? `${totalWarrantyAssets} warranty records available`
+        : "Run Warranty Calculator first",
+    },
+  ];
+
+  // Filter tools based on search and category using selector
+  const filteredTools = useSelector((state) =>
+    selectFilteredTools(state, tools)
+  );
+
+  // Event handlers using dispatch
+  const handleMouseEnterCard = useCallback(
+    (cardId) => {
+      dispatch(setHoveredCard(cardId));
+    },
+    [dispatch]
+  );
+
+  const handleMouseLeaveCard = useCallback(() => {
+    dispatch(setHoveredCard(null));
+  }, [dispatch]);
+
+  const handleMouseEnterButton = useCallback(
+    (buttonId) => {
+      dispatch(setHoveredButton(buttonId));
+    },
+    [dispatch]
+  );
+
+  const handleMouseLeaveButton = useCallback(() => {
+    dispatch(setHoveredButton(null));
+  }, [dispatch]);
+
+  const handleMouseEnterLink = useCallback(
+    (linkId) => {
+      dispatch(setHoveredLink(linkId));
+    },
+    [dispatch]
+  );
+
+  const handleMouseLeaveLink = useCallback(() => {
+    dispatch(setHoveredLink(null));
+  }, [dispatch]);
+
+  const handleSearchChange = useCallback(
+    (e) => {
+      dispatch(setSearchTerm(e.target.value));
+    },
+    [dispatch]
+  );
+
+  const handleCategoryChange = useCallback(
+    (category) => {
+      dispatch(setSelectedCategory(category));
+    },
+    [dispatch]
+  );
+
+  const handleToggleNotifications = useCallback(() => {
+    dispatch(toggleNotifications());
+  }, [dispatch]);
+
+  const handleToggleDarkMode = useCallback(() => {
+    dispatch(toggleDarkMode());
+  }, [dispatch]);
+
+  const handleToggleQuickTips = useCallback(() => {
+    dispatch(toggleQuickTips());
+  }, [dispatch]);
+
+  const handleToggleSearch = useCallback(() => {
+    dispatch(toggleSearch());
+  }, [dispatch]);
+
+  // ================================
+  // COMPREHENSIVE STYLING SYSTEM
+  // ================================
+
+  const containerStyle = {
+    minHeight: "100vh",
+    background: isDarkMode
+      ? "linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%)"
+      : "linear-gradient(135deg, #f8fafc 0%, #e2e8f0 50%, #cbd5e1 100%)",
+    color: isDarkMode ? "white" : "#1e293b",
+    fontFamily:
+      '"Inter", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+    display: "flex",
+    flexDirection: isMobile ? "column" : "row",
+    position: "relative",
+    transition: "all 0.3s ease",
+  };
+
+  const backgroundOverlayStyle = {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    background: isDarkMode
+      ? `
+      radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
+      radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.15) 0%, transparent 50%),
+      radial-gradient(circle at 40% 40%, rgba(120, 219, 255, 0.1) 0%, transparent 50%)
+    `
+      : `
+      radial-gradient(circle at 20% 80%, rgba(59, 130, 246, 0.1) 0%, transparent 50%),
+      radial-gradient(circle at 80% 20%, rgba(139, 92, 246, 0.08) 0%, transparent 50%)
+    `,
+    pointerEvents: "none",
+  };
+
+  // ================================
+  // SIDEBAR STYLING
+  // ================================
+
+  const sidebarStyle = {
+    width: isMobile ? "100%" : "300px",
+    backgroundColor: isDarkMode
+      ? "rgba(255, 255, 255, 0.95)"
+      : "rgba(255, 255, 255, 0.98)",
+    backdropFilter: "blur(20px)",
+    borderRight: `1px solid ${
+      isDarkMode ? "rgba(203, 213, 225, 0.3)" : "rgba(203, 213, 225, 0.5)"
+    }`,
+    color: "#1e293b",
+    padding: "32px 24px",
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "space-between",
+    position: "relative",
+    zIndex: 10,
+    minHeight: isMobile ? "auto" : "100vh",
+    boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
+  };
+
+  // Search Modal Styles
+  const searchModalStyle = {
+    position: "fixed",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0, 0, 0, 0.8)",
+    display: showSearch ? "flex" : "none",
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 1000,
+  };
+
+  const searchBoxStyle = {
+    backgroundColor: "white",
+    borderRadius: "16px",
+    padding: "24px",
+    width: "90%",
+    maxWidth: "500px",
+    boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.5)",
+  };
+
+  const searchInputStyle = {
+    width: "100%",
+    padding: "16px",
+    fontSize: "1.1rem",
+    border: "2px solid #e2e8f0",
+    borderRadius: "12px",
+    outline: "none",
+    marginBottom: "16px",
+  };
+
+  // Notification styles
+  const notificationPanelStyle = {
+    position: "absolute",
+    top: "70px",
+    right: "20px",
+    width: "320px",
+    backgroundColor: "white",
+    borderRadius: "16px",
+    boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.3)",
+    padding: "20px",
+    zIndex: 100,
+    display: showNotifications ? "block" : "none",
+    maxHeight: "400px",
+    overflowY: "auto",
+  };
+
+  const headerSectionStyle = {
+    borderBottom: "2px solid #e2e8f0",
+    paddingBottom: "24px",
+    marginBottom: "32px",
+  };
+
+  const mainContentStyle = {
+    flex: 1,
+    padding: isMobile ? "20px" : "40px",
+    overflowY: "auto",
+    position: "relative",
+    zIndex: 1,
+  };
+
+  const toolCardStyle = (tool) => ({
+    background:
+      hoveredCard === tool.id
+        ? "linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 250, 252, 0.95) 100%)"
+        : "rgba(255, 255, 255, 0.95)",
+    backdropFilter: "blur(20px)",
+    borderRadius: "20px",
+    padding: "32px",
+    border: `1px solid ${
+      hoveredCard === tool.id
+        ? "rgba(59, 130, 246, 0.3)"
+        : "rgba(255, 255, 255, 0.2)"
+    }`,
+    boxShadow:
+      hoveredCard === tool.id
+        ? "0 25px 50px -12px rgba(59, 130, 246, 0.25)"
+        : "0 20px 40px -12px rgba(0, 0, 0, 0.15)",
+    transform: hoveredCard === tool.id ? "translateY(-8px)" : "translateY(0)",
+    transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+    cursor: "pointer",
+    position: "relative",
+    overflow: "hidden",
+  });
+
+  const toolIconStyle = {
+    fontSize: "3rem",
+    marginBottom: "20px",
+    display: "block",
+  };
+
+  const toolTitleStyle = {
+    fontSize: "1.5rem",
+    fontWeight: 700,
+    color: "#1e293b",
+    marginBottom: "12px",
+    lineHeight: 1.2,
+  };
+
+  const toolDescriptionStyle = {
+    color: "#64748b",
+    fontSize: "0.95rem",
+    lineHeight: 1.6,
+    marginBottom: "20px",
+  };
+
+  const toolTagStyle = {
+    display: "inline-block",
+    padding: "6px 12px",
+    backgroundColor: "#f1f5f9",
+    color: "#475569",
+    borderRadius: "20px",
+    fontSize: "0.8rem",
+    fontWeight: 600,
+    marginBottom: "16px",
+  };
+
+  const statusIndicatorStyle = (status) => ({
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
+    padding: "8px 12px",
+    borderRadius: "8px",
+    fontSize: "0.8rem",
+    fontWeight: 500,
+    backgroundColor: status === "ready" ? "#f0fdf4" : "#fef3c7",
+    color: status === "ready" ? "#059669" : "#d97706",
+    border: `1px solid ${status === "ready" ? "#bbf7d0" : "#fcd34d"}`,
+  });
+
+  const categoryFilterStyle = (category, isActive) => ({
+    padding: "8px 16px",
+    borderRadius: "20px",
+    border: "none",
+    backgroundColor: isActive ? "#3b82f6" : "rgba(255, 255, 255, 0.8)",
+    color: isActive ? "white" : "#64748b",
+    fontSize: "0.875rem",
+    fontWeight: 600,
+    cursor: "pointer",
+    transition: "all 0.2s ease",
+    backdropFilter: "blur(10px)",
+  });
+
+  // ================================
+  // RENDER COMPONENT
+  // ================================
+
+  return (
+    <div style={containerStyle}>
+      <div style={backgroundOverlayStyle}></div>
+
+      {/* Search Modal */}
+      <div
+        style={searchModalStyle}
+        onClick={() => dispatch(setShowSearch(false))}
+      >
+        <div style={searchBoxStyle} onClick={(e) => e.stopPropagation()}>
+          <input
+            type="text"
+            placeholder="Search tools and features..."
+            value={searchTerm}
+            onChange={handleSearchChange}
+            style={searchInputStyle}
+            autoFocus
+          />
+          <div style={{ fontSize: "0.875rem", color: "#64748b" }}>
+            Press <kbd>Escape</kbd> to close
+          </div>
+        </div>
+      </div>
+
+      {/* Sidebar */}
+      <div style={sidebarStyle}>
+        <div>
+          {/* Header Section */}
+          <div style={headerSectionStyle}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                marginBottom: "16px",
+              }}
+            >
+              <h1
+                style={{
+                  fontSize: "1.75rem",
+                  fontWeight: 800,
+                  background:
+                    "linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)",
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                  margin: 0,
+                }}
+              >
+                SUVIDHA SETU
+              </h1>
+              <div
+                style={{
+                  fontSize: "0.875rem",
+                  color: "#64748b",
+                  fontWeight: 600,
+                }}
+              >
+                {currentTime}
+              </div>
+            </div>
+
+            <p
+              style={{
+                color: "#64748b",
+                fontSize: "0.95rem",
+                margin: 0,
+                lineHeight: 1.5,
+              }}
+            >
+              Advanced financial calculation suite with intelligent automation
+              and comprehensive data management.
+            </p>
+          </div>
+   
+          {/* Controls */}
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: "12px",
+            }}
+          >
+            <button
+              onClick={handleToggleSearch}
+              onMouseEnter={() => handleMouseEnterButton("search")}
+              onMouseLeave={handleMouseLeaveButton}
+              style={{
+                padding: "12px 16px",
+                backgroundColor:
+                  hoveredButton === "search"
+                    ? "#3b82f6"
+                    : "rgba(59, 130, 246, 0.1)",
+                color: hoveredButton === "search" ? "white" : "#3b82f6",
+                border: "1px solid rgba(59, 130, 246, 0.3)",
+                borderRadius: "12px",
+                cursor: "pointer",
+                fontSize: "0.875rem",
+                fontWeight: 600,
+                transition: "all 0.2s ease",
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+              }}
+            >
+              🔍 Search Tools (Ctrl+K)
+            </button>
+
+            <button
+              onClick={handleToggleNotifications}
+              onMouseEnter={() => handleMouseEnterButton("notifications")}
+              onMouseLeave={handleMouseLeaveButton}
+              style={{
+                padding: "12px 16px",
+                backgroundColor:
+                  hoveredButton === "notifications"
+                    ? "#f59e0b"
+                    : "rgba(245, 158, 11, 0.1)",
+                color: hoveredButton === "notifications" ? "white" : "#f59e0b",
+                border: "1px solid rgba(245, 158, 11, 0.3)",
+                borderRadius: "12px",
+                cursor: "pointer",
+                fontSize: "0.875rem",
+                fontWeight: 600,
+                transition: "all 0.2s ease",
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                position: "relative",
+              }}
+            >
+              🔔 Notifications
+              {notifications.length > 0 && (
+                <span
+                  style={{
+                    position: "absolute",
+                    top: "-4px",
+                    right: "-4px",
+                    backgroundColor: "#ef4444",
+                    color: "white",
+                    borderRadius: "50%",
+                    width: "20px",
+                    height: "20px",
+                    fontSize: "0.7rem",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  {notifications.length}
+                </span>
+              )}
+            </button>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div
+          style={{
+            borderTop: "1px solid #e2e8f0",
+            paddingTop: "20px",
+            marginTop: "20px",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: "16px",
+            }}
+          >
+            <span style={{ fontSize: "0.8rem", color: "#64748b" }}>Theme</span>
+            <button
+              onClick={handleToggleDarkMode}
+              style={{
+                padding: "6px 12px",
+                backgroundColor: isDarkMode ? "#374151" : "#f3f4f6",
+                color: isDarkMode ? "#d1d5db" : "#374151",
+                border: "none",
+                borderRadius: "8px",
+                fontSize: "0.8rem",
+                cursor: "pointer",
+                transition: "all 0.2s ease",
+              }}
+            >
+              {isDarkMode ? "🌙 Dark" : "☀️ Light"}
+            </button>
+          </div>
+
+          <div
+            style={{
+              fontSize: "0.75rem",
+              color: "#9ca3af",
+              textAlign: "center",
+            }}
+          >
+            Enhanced UI/AI Dashboard v2.0
+          </div>
+        </div>
+      </div>
+
+      {/* Notifications Panel */}
+      <div style={notificationPanelStyle}>
+        <h4
+          style={{
+            fontSize: "1rem",
+            fontWeight: 700,
+            marginBottom: "16px",
+            color: "#1e293b",
+          }}
+        >
+          🔔 Notifications
+        </h4>
+        {notifications.length === 0 ? (
+          <p style={{ color: "#64748b", fontSize: "0.875rem" }}>
+            No new notifications
+          </p>
+        ) : (
+          notifications.map((notification, index) => (
+            <div
+              key={index}
+              style={{
+                padding: "12px",
+                backgroundColor: "#f8fafc",
+                borderRadius: "8px",
+                marginBottom: "8px",
+                borderLeft: `4px solid ${
+                  notification.type === "warning" ? "#f59e0b" : "#3b82f6"
+                }`,
+              }}
+            >
+              <div
+                style={{
+                  fontSize: "0.8rem",
+                  fontWeight: 600,
+                  color: "#374151",
+                  marginBottom: "4px",
+                }}
+              >
+                {notification.title}
+              </div>
+              <div
+                style={{
+                  fontSize: "0.75rem",
+                  color: "#64748b",
+                }}
+              >
+                {notification.message}
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* Main Content */}
+      <div style={mainContentStyle}>
+        {/* Global Data Management Hub */}
+        <ExcelUploadSection />
+
+        {/* Category Filters */}
+        <div
+          style={{
+            display: "flex",
+            gap: "12px",
+            marginBottom: "32px",
+            flexWrap: "wrap",
+          }}
+        >
+          {["all", "financial", "risk", "monitoring"].map((category) => (
+            <button
+              key={category}
+              onClick={() => handleCategoryChange(category)}
+              style={categoryFilterStyle(
+                category,
+                selectedCategory === category
+              )}
+            >
+              {category === "all"
+                ? "🔍 All Tools"
+                : category === "financial"
+                ? "💰 Financial"
+                : category === "risk"
+                ? "🛡️ Risk Management"
+                : "📊 Monitoring"}
+            </button>
+          ))}
+        </div>
+
+        {/* Tools Grid */}
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: isMobile
+              ? "1fr"
+              : "repeat(auto-fit, minmax(400px, 1fr))",
+            gap: "32px",
+            marginBottom: "40px",
+          }}
+        >
+          {filteredTools.map((tool) => (
+            <div
+              key={tool.id}
+              style={toolCardStyle(tool)}
+              onMouseEnter={() => handleMouseEnterCard(tool.id)}
+              onMouseLeave={handleMouseLeaveCard}
+              onClick={() => handleNavigation(tool.path, tool.title)}
+            >
+              {/* Tool Icon */}
+              <div style={toolIconStyle}>{tool.icon}</div>
+
+              {/* Tool Tag */}
+              <div style={toolTagStyle}>{tool.tag}</div>
+
+              {/* Tool Title */}
+              <h3 style={toolTitleStyle}>{tool.title}</h3>
+
+              {/* Tool Description */}
+              <p style={toolDescriptionStyle}>{tool.description}</p>
+
+              {/* Data Status */}
+              <div style={statusIndicatorStyle(tool.dataStatus)}>
+                <div
+                  style={{
+                    width: "8px",
+                    height: "8px",
+                    borderRadius: "50%",
+                    backgroundColor:
+                      tool.dataStatus === "ready" ? "#10b981" : "#f59e0b",
+                  }}
+                ></div>
+                {tool.statusText}
+              </div>
+
+              {/* Hover Effect Overlay */}
+              {hoveredCard === tool.id && (
+                <div
+                  style={{
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    background:
+                      "linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(139, 92, 246, 0.05) 100%)",
+                    borderRadius: "20px",
+                    pointerEvents: "none",
+                  }}
+                ></div>
+              )}
+            </div>
+          ))}
+        </div>
+
+        {/* Recent Activity */}
+        {recentActivity.length > 0 && (
+          <div
+            style={{
+              background: "rgba(255, 255, 255, 0.95)",
+              backdropFilter: "blur(20px)",
+              borderRadius: "20px",
+              padding: "32px",
+              border: "1px solid rgba(255, 255, 255, 0.2)",
+              boxShadow: "0 20px 40px -12px rgba(0, 0, 0, 0.15)",
+            }}
+          >
+            <h3
+              style={{
+                fontSize: "1.5rem",
+                fontWeight: 700,
+                color: "#1e293b",
+                marginBottom: "24px",
+              }}
+            >
+              📈 Recent Activity
+            </h3>
+            <div style={{ space: "16px" }}>
+              {recentActivity.map((activity, index) => (
+                <div
+                  key={index}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "16px",
+                    padding: "16px",
+                    backgroundColor: "#f8fafc",
+                    borderRadius: "12px",
+                    marginBottom: "12px",
+                  }}
+                >
+                  <div style={{ fontSize: "1.5rem" }}>{activity.icon}</div>
+                  <div style={{ flex: 1 }}>
+                    <div
+                      style={{
+                        fontSize: "0.9rem",
+                        fontWeight: 600,
+                        color: "#374151",
+                        marginBottom: "4px",
+                      }}
+                    >
+                      {activity.title}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: "0.8rem",
+                        color: "#64748b",
+                      }}
+                    >
+                      {activity.timestamp}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export default EnhancedUIDAIDashboard;
