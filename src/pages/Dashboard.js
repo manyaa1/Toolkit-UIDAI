@@ -348,17 +348,6 @@ const ExcelUploadSection = () => {
               ? `${sheets.length} sheets, ${totalRows.toLocaleString()} rows`
               : "No files uploaded"}
           </p>
-          {/* Debug info */}
-          <p
-            style={{
-              fontSize: "0.7rem",
-              color: "#9ca3af",
-              margin: "4px 0 0 0",
-            }}
-          >
-            Debug:{" "}
-            {isLoading ? "Loading..." : hasData ? "Data loaded" : "No data"}
-          </p>
         </div>
 
         {/* AMC Data Status */}
@@ -1010,22 +999,7 @@ function EnhancedUIDAIDashboard() {
     marginBottom: "16px",
   };
 
-  // Notification styles
-  const notificationPanelStyle = {
-    position: "absolute",
-    top: "70px",
-    right: "20px",
-    width: "320px",
-    backgroundColor: "white",
-    borderRadius: "16px",
-    boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.3)",
-    padding: "20px",
-    zIndex: 100,
-    display: showNotifications ? "block" : "none",
-    maxHeight: "400px",
-    overflowY: "auto",
-  };
-
+  
   const headerSectionStyle = {
     borderBottom: "2px solid #e2e8f0",
     paddingBottom: "24px",
@@ -1202,52 +1176,6 @@ function EnhancedUIDAIDashboard() {
             }}
           >
             
-
-            <button
-              onClick={handleToggleNotifications}
-              onMouseEnter={() => handleMouseEnterButton("notifications")}
-              onMouseLeave={handleMouseLeaveButton}
-              style={{
-                padding: "12px 16px",
-                backgroundColor:
-                  hoveredButton === "notifications"
-                    ? "#f59e0b"
-                    : "rgba(245, 158, 11, 0.1)",
-                color: hoveredButton === "notifications" ? "white" : "#f59e0b",
-                border: "1px solid rgba(245, 158, 11, 0.3)",
-                borderRadius: "12px",
-                cursor: "pointer",
-                fontSize: "0.875rem",
-                fontWeight: 600,
-                transition: "all 0.2s ease",
-                display: "flex",
-                alignItems: "center",
-                gap: "8px",
-                position: "relative",
-              }}
-            >
-              🔔 Notifications
-              {notifications.length > 0 && (
-                <span
-                  style={{
-                    position: "absolute",
-                    top: "-4px",
-                    right: "-4px",
-                    backgroundColor: "#ef4444",
-                    color: "white",
-                    borderRadius: "50%",
-                    width: "20px",
-                    height: "20px",
-                    fontSize: "0.7rem",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  {notifications.length}
-                </span>
-              )}
-            </button>
           </div>
         </div>
 
@@ -1297,59 +1225,7 @@ function EnhancedUIDAIDashboard() {
         </div>
       </div>
 
-      {/* Notifications Panel */}
-      <div style={notificationPanelStyle}>
-        <h4
-          style={{
-            fontSize: "1rem",
-            fontWeight: 700,
-            marginBottom: "16px",
-            color: "#1e293b",
-          }}
-        >
-          🔔 Notifications
-        </h4>
-        {notifications.length === 0 ? (
-          <p style={{ color: "#64748b", fontSize: "0.875rem" }}>
-            No new notifications
-          </p>
-        ) : (
-          notifications.map((notification, index) => (
-            <div
-              key={index}
-              style={{
-                padding: "12px",
-                backgroundColor: "#f8fafc",
-                borderRadius: "8px",
-                marginBottom: "8px",
-                borderLeft: `4px solid ${
-                  notification.type === "warning" ? "#f59e0b" : "#3b82f6"
-                }`,
-              }}
-            >
-              <div
-                style={{
-                  fontSize: "0.8rem",
-                  fontWeight: 600,
-                  color: "#374151",
-                  marginBottom: "4px",
-                }}
-              >
-                {notification.title}
-              </div>
-              <div
-                style={{
-                  fontSize: "0.75rem",
-                  color: "#64748b",
-                }}
-              >
-                {notification.message}
-              </div>
-            </div>
-          ))
-        )}
-      </div>
-
+      
       {/* Main Content */}
       <div style={mainContentStyle}>
         {/* Global Data Management Hub */}
