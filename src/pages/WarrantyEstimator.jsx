@@ -40,8 +40,72 @@ const spinKeyframes = `
     100% { transform: rotate(360deg); }
   }
 `;
-
-// Inject styles
+  const parseExcelDate = (dateValue) => {
+    if (!dateValue) return new Date().toISOString().split("T")[0];
+    
+    
+    const dateStr = String(dateValue).trim();
+    
+    
+    if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      return dateStr;
+    }
+    
+    
+    if (!isNaN(dateStr) && dateStr.length <= 6) {
+      const serialNumber = parseInt(dateStr);
+      if (serialNumber > 0 && serialNumber < 100000) {
+        
+        const excelEpoch = new Date(1899, 11, 30); 
+        const resultDate = new Date(excelEpoch.getTime() + serialNumber * 24 * 60 * 60 * 1000);
+        
+        
+        if (serialNumber > 59) {
+          resultDate.setTime(resultDate.getTime() - 24 * 60 * 60 * 1000);
+        }
+        
+        return resultDate.toISOString().split("T")[0];
+      }
+    }
+    
+    // Handle DD-MMM-YY format (like "18-Oct-21")
+    const ddMmmYyMatch = dateStr.match(/^(\d{1,2})-([A-Za-z]{3})-(\d{2})$/);
+    if (ddMmmYyMatch) {
+      const [, day, monthStr, year] = ddMmmYyMatch;
+      const monthMap = {
+        'jan': 0, 'feb': 1, 'mar': 2, 'apr': 3,
+        'may': 4, 'jun': 5, 'jul': 6, 'aug': 7,
+        'sep': 8, 'oct': 9, 'nov': 10, 'dec': 11
+      };
+      const monthIndex = monthMap[monthStr.toLowerCase()];
+      if (monthIndex !== undefined) {
+        const fullYear = 2000 + parseInt(year);
+        // Create date in UTC to avoid timezone issues
+        const date = new Date(Date.UTC(fullYear, monthIndex, parseInt(day)));
+        const formattedDate = date.toISOString().split("T")[0];
+        console.log(`📅 Warranty: Parsed ${dateStr} -> ${formattedDate}`);
+        return formattedDate;
+      }
+    }
+    
+    // Handle text dates like "Oct 18, 2021", etc. - fallback
+    try {
+      const parsedDate = new Date(dateStr);
+      if (!isNaN(parsedDate.getTime())) {
+        const formattedDate = parsedDate.toISOString().split("T")[0];
+        console.log(`📅 Warranty: Fallback parsed ${dateStr} -> ${formattedDate}`);
+        return formattedDate;
+      }
+    } catch (error) {
+      console.warn(`⚠️ Warranty: Failed to parse date: ${dateStr}`);
+    }
+    
+    // Default fallback
+    const today = new Date().toISOString().split("T")[0];
+    console.warn(`⚠️ Warranty: Using today's date as fallback for: ${dateStr} -> ${today}`);
+    return today;
+  };
+  //ject styles
 if (typeof document !== "undefined") {
   const style = document.createElement("style");
   style.textContent = spinKeyframes;
@@ -131,18 +195,32 @@ const WarrantyEstimator = () => {
     [getQuarterDates]
   );
 
-  // Calculate warranty schedule 
   const calculateWarrantySchedule = useCallback(
     (startDate, cost, gstRate = 0.18, warrantyPercent = 0.15, years = 3) => {
       const schedule = new Map();
       const splitDetails = new Map();
 
-      const yearlyAmount = (cost * warrantyPercent) / years;
-      const quarterlyAmount = yearlyAmount / 4;
+      const totalWarrantyAmount = cost * warrantyPercent;
+      const quarterlyAmount = totalWarrantyAmount / (years * 4); 
 
       const warrantyEnd = new Date(startDate);
       warrantyEnd.setFullYear(warrantyEnd.getFullYear() + years);
       warrantyEnd.setDate(warrantyEnd.getDate() - 1);
+
+      console.log(`🔍 Warranty Calculation Start:`, {
+        startDate: startDate.toISOString().split('T')[0],
+        warrantyEnd: warrantyEnd.toISOString().split('T')[0],
+        totalWarrantyAmount: totalWarrantyAmount.toFixed(2),
+        quarterlyAmount: quarterlyAmount.toFixed(2),
+        years
+      });
+
+      let firstQuarterActualAmount = 0;
+      let firstQuarterKey = null;
+      let lastQuarterKey = null;
+
+      // Find all quarters that overlap with warranty period
+      const quarterlyPayments = [];
 
       for (
         let year = startDate.getFullYear() - 1;
@@ -167,50 +245,158 @@ const WarrantyEstimator = () => {
             continue;
           }
 
-          const totalDays =
-            Math.floor((qEnd - qStart) / (1000 * 60 * 60 * 24)) + 1;
-          const overlapDays =
-            Math.floor((overlapEnd - overlapStart) / (1000 * 60 * 60 * 24)) + 1;
-          const proratedAmount = (overlapDays / totalDays) * quarterlyAmount;
-
           const displayYear = qStart.getFullYear();
           const key = `${displayYear}-${qtrName}`;
 
-          const withoutGst = Math.round(proratedAmount * 100) / 100;
-          const withGst = Math.round(withoutGst * (1 + gstRate) * 100) / 100;
+          const totalDaysInQuarter =
+            Math.floor((qEnd - qStart) / (1000 * 60 * 60 * 24)) + 1;
+          const overlapDays =
+            Math.floor((overlapEnd - overlapStart) / (1000 * 60 * 60 * 24)) + 1;
 
-          if (schedule.has(key)) {
-            const existing = schedule.get(key);
-            schedule.set(key, [
-              existing[0] + withGst,
-              existing[1] + withoutGst,
-            ]);
-          } else {
-            schedule.set(key, [withGst, withoutGst]);
-          }
-
-          splitDetails.set(key, {
+          quarterlyPayments.push({
+            key,
             quarter: qtrName,
             quarterStart: qStart,
             quarterEnd: qEnd,
-            proratedDays: overlapDays,
-            totalDaysInQuarter: totalDays,
-            amountWithoutGST: withoutGst,
-            amountWithGST: withGst,
-            calculationType: "General Prorated",
+            overlapStart,
+            overlapEnd,
+            totalDaysInQuarter,
+            overlapDays,
+            isFirst: overlapStart.getTime() === startDate.getTime(),
+            isLast: overlapEnd.getTime() === warrantyEnd.getTime(),
           });
         }
+      }
+
+      // Sort quarters chronologically
+      quarterlyPayments.sort((a, b) => a.quarterStart - b.quarterStart);
+
+      console.log(`📅 Found ${quarterlyPayments.length} quarters for warranty period`);
+
+      // Calculate amounts for each quarter
+      quarterlyPayments.forEach((quarter, index) => {
+        let proratedAmount;
+
+        if (quarter.isFirst) {
+          // First quarter: Prorate based on actual days in warranty period
+          proratedAmount = (quarter.overlapDays / quarter.totalDaysInQuarter) * quarterlyAmount;
+          firstQuarterActualAmount = proratedAmount;
+          firstQuarterKey = quarter.key;
+          
+          console.log(`📅 First Quarter ${quarter.key}:`, {
+            overlapDays: quarter.overlapDays,
+            totalDaysInQuarter: quarter.totalDaysInQuarter,
+            proratedAmount: proratedAmount.toFixed(2),
+            fullQuarterlyAmount: quarterlyAmount.toFixed(2)
+          });
+        } else if (quarter.isLast) {
+          // Last quarter: Pay ONLY the deficit from first quarter (quarterly_amount - first_quarter_amount)
+          const firstQuarterDeficit = quarterlyAmount - firstQuarterActualAmount;
+          proratedAmount = firstQuarterDeficit;
+          lastQuarterKey = quarter.key;
+          
+          console.log(`📅 Last Quarter ${quarter.key}:`, {
+            overlapDays: quarter.overlapDays,
+            totalDaysInQuarter: quarter.totalDaysInQuarter,
+            quarterlyAmount: quarterlyAmount.toFixed(2),
+            firstQuarterActualAmount: firstQuarterActualAmount.toFixed(2),
+            deficitAmount: firstQuarterDeficit.toFixed(2),
+            finalAmount: proratedAmount.toFixed(2)
+          });
+        } else {
+          // Middle quarters: Full quarterly amount if fully covered
+          if (quarter.overlapDays === quarter.totalDaysInQuarter) {
+            proratedAmount = quarterlyAmount;
+          } else {
+            // Partial middle quarter (rare case)
+            proratedAmount = (quarter.overlapDays / quarter.totalDaysInQuarter) * quarterlyAmount;
+          }
+          
+          console.log(`📅 Middle Quarter ${quarter.key}:`, {
+            overlapDays: quarter.overlapDays,
+            totalDaysInQuarter: quarter.totalDaysInQuarter,
+            amount: proratedAmount.toFixed(2),
+            isFull: quarter.overlapDays === quarter.totalDaysInQuarter
+          });
+        }
+
+        const withoutGst = Math.round(proratedAmount * 100) / 100;
+        const withGst = Math.round(withoutGst * (1 + gstRate) * 100) / 100;
+
+        // Store in schedule
+        if (schedule.has(quarter.key)) {
+          const existing = schedule.get(quarter.key);
+          schedule.set(quarter.key, [
+            existing[0] + withGst,
+            existing[1] + withoutGst,
+          ]);
+        } else {
+          schedule.set(quarter.key, [withGst, withoutGst]);
+        }
+
+        // Store detailed breakdown
+        splitDetails.set(quarter.key, {
+          quarter: quarter.quarter,
+          quarterStart: quarter.quarterStart,
+          quarterEnd: quarter.quarterEnd,
+          proratedDays: quarter.overlapDays,
+          totalDaysInQuarter: quarter.totalDaysInQuarter,
+          amountWithoutGST: withoutGst,
+          amountWithGST: withGst,
+          calculationType: quarter.isFirst 
+            ? "First Quarter (Prorated)" 
+            : quarter.isLast 
+            ? "Last Quarter (Deficit Only)" 
+            : quarter.overlapDays === quarter.totalDaysInQuarter
+            ? "Full Quarter"
+            : "Partial Quarter",
+          isFirst: quarter.isFirst,
+          isLast: quarter.isLast,
+        });
+      });
+
+      // Verify total calculation
+      const calculatedTotal = Array.from(schedule.values()).reduce(
+        (sum, [withGst, withoutGst]) => sum + withoutGst, 
+        0
+      );
+      const expectedTotal = totalWarrantyAmount;
+      const difference = Math.abs(expectedTotal - calculatedTotal);
+      
+      console.log(`🎯 Warranty Total Verification:`, {
+        expected: expectedTotal.toFixed(2),
+        calculated: calculatedTotal.toFixed(2),
+        difference: difference.toFixed(2),
+        isCorrect: difference < 0.01, // Within 1 paisa tolerance
+        firstQuarterKey,
+        firstQuarterActualAmount: firstQuarterActualAmount.toFixed(2),
+        lastQuarterKey,
+        quarterCount: quarterlyPayments.length,
+        deficitInLastQuarter: (quarterlyAmount - firstQuarterActualAmount).toFixed(2)
+      });
+
+      // Warn if there's a significant difference
+      if (difference > 0.01) {
+        console.warn(`⚠️ Total mismatch detected! Difference: ₹${difference.toFixed(2)}`);
       }
 
       return {
         schedule: Object.fromEntries(schedule),
         splitDetails: Object.fromEntries(splitDetails),
+        metadata: {
+          totalExpected: expectedTotal,
+          totalCalculated: calculatedTotal,
+          difference: difference,
+          quarterCount: quarterlyPayments.length,
+          firstQuarterAdjustment: quarterlyAmount - firstQuarterActualAmount
+        }
       };
     },
     [getQuarterDates]
   );
 
-  // Process Excel data for warranty calculations
+
+    // Process Excel data for warranty calculations
   const processExcelData = useCallback(() => {
     // Check if we have Excel data and get the active sheet data
     if (!excelData || Object.keys(excelData).length === 0) {
@@ -294,16 +480,19 @@ const WarrantyEstimator = () => {
           return parsed;
         })();
         const quantity = parseInt(row["Quantity"] || row["quantity"] || 1);
-        const uatDate = new Date(
+        
+        // FIXED: Use parseExcelDate function instead of new Date()
+        const uatDate = parseExcelDate(
           row["UAT Date"] ||
             row["uatDate"] ||
             row["Purchase Date"] ||
-            row["purchaseDate"] ||
-            Date.now()
+            row["purchaseDate"]
         );
+        
         const warrantyStart = row["Warranty Start"]
-          ? new Date(row["Warranty Start"])
+          ? parseExcelDate(row["Warranty Start"])
           : uatDate;
+          
         const warrantyYears = parseInt(
           row["Warranty Years"] || row["warrantyYears"] || 3
         );
@@ -313,8 +502,8 @@ const WarrantyEstimator = () => {
           itemName,
           cost,
           quantity,
-          uatDate: uatDate.toISOString().split("T")[0],
-          warrantyStart: warrantyStart.toISOString().split("T")[0],
+          uatDate,  // Already formatted as YYYY-MM-DD by parseExcelDate
+          warrantyStart,  // Already formatted as YYYY-MM-DD by parseExcelDate
           warrantyYears,
           location: location || "Default Location",
           source: "excel",
@@ -406,7 +595,7 @@ const WarrantyEstimator = () => {
   }, [manualProduct, location]);
 
   // Generate dynamic table columns for warranty schedule (similar to AMC calculator)
-  const warrantyTableColumns = useMemo(() => {
+    const warrantyTableColumns = useMemo(() => {
     // Base columns for warranty data
     const baseColumns = [
       {
@@ -461,19 +650,23 @@ const WarrantyEstimator = () => {
       });
     }
 
-    // Sort quarters chronologically
-    const quarterOrder = { JFM: 0, AMJ: 1, JAS: 2, OND: 3 };
+    // FIXED: Use the same sorting logic as calculateQuarterlySchedule
+    const quarterOrder = ["JFM", "AMJ", "JAS", "OND"];
     const sortedQuarters = Array.from(quarterSet).sort((a, b) => {
       const [qA, yearA] = a.split(" ");
       const [qB, yearB] = b.split(" ");
-
+      
+      // Parse years as integers for proper comparison
+      const yearNumA = parseInt(yearA);
+      const yearNumB = parseInt(yearB);
+      
       // First sort by year
-      if (parseInt(yearA) !== parseInt(yearB)) {
-        return parseInt(yearA) - parseInt(yearB);
+      if (yearNumA !== yearNumB) {
+        return yearNumA - yearNumB;
       }
-
+      
       // Then sort by quarter within the same year
-      return quarterOrder[qA] - quarterOrder[qB];
+      return quarterOrder.indexOf(qA) - quarterOrder.indexOf(qB);
     });
 
     // Create column definitions for each quarter
@@ -503,6 +696,11 @@ const WarrantyEstimator = () => {
         });
       }
     }
+
+    console.log("🔍 Table Columns Debug:", {
+      quarterColumns: quarterColumns.map(col => col.key),
+      sortedQuarters: sortedQuarters
+    });
 
     return [...baseColumns, ...quarterColumns, ...totalColumns];
   }, [calculatedSchedule]);
@@ -572,169 +770,300 @@ const WarrantyEstimator = () => {
     };
   }, [calculatedSchedule]);
 
-  // Calculate quarterly schedule for all products
-  const calculateQuarterlySchedule = useCallback(() => {
-  if (warrantyProducts.length === 0) {
-    alert("No warranty products to calculate. Please add products first.");
-    return;
-  }
+    // Calculate quarterly schedule for all products
+     const calculateQuarterlySchedule = useCallback(() => {
+      if (warrantyProducts.length === 0) {
+        alert("No warranty products to calculate. Please add products first.");
+        return;
+      }
 
-  setIsCalculating(true);
+      setIsCalculating(true);
 
-  try {
-    const quarterlyRows = [];
-    const allQuarters = new Set();
+      try {
+        const quarterlyRows = [];
+        const allQuarters = new Set();
 
-    warrantyProducts.forEach((product) => {
-      const warrantyStart = new Date(product.warrantyStart);
-      const totalCost = product.cost; // Warranty is per-unit
+        // First pass: Calculate schedules and collect ALL quarters
+        warrantyProducts.forEach((product) => {
+          const warrantyStart = new Date(product.warrantyStart);
+          const totalCost = product.cost;
 
-      const { schedule } = calculateWarrantySchedule(
-        warrantyStart,
-        totalCost,
-        0.18, // 18% GST
-        0.15, // 15% warranty percentage
-        product.warrantyYears
-      );
+          const { schedule, splitDetails } = calculateWarrantySchedule(
+            warrantyStart,
+            totalCost,
+            0.18, // 18% GST
+            0.15, // 15% warranty percentage
+            product.warrantyYears
+          );
 
-      const row = {
-        itemName: product.itemName,
-        uatDate: new Date(product.uatDate).toLocaleDateString("en-GB"),
-        warrantyStart: warrantyStart.toLocaleDateString("en-GB"),
-        cost: product.cost,
-        quantity: product.quantity,
-        location: product.location,
-        source: product.source,
-      };
+          const row = {
+            itemName: product.itemName,
+            uatDate: new Date(product.uatDate).toLocaleDateString("en-GB"),
+            warrantyStart: warrantyStart.toLocaleDateString("en-GB"),
+            cost: product.cost,
+            quantity: product.quantity,
+            location: product.location,
+            source: product.source,
+          };
 
-      let totalAmount = 0;
+          let totalAmount = 0;
 
-      Object.entries(schedule).forEach(([key, [withGst, withoutGst]]) => {
-        const [year, quarter] = key.split("-");
-        const colName = `${quarter} ${year}`;
-        const value = showGST ? withGst : withoutGst;
-        row[colName] = Math.round(value * 100) / 100; // Round to 2 decimal places
-        totalAmount += value;
-        allQuarters.add(colName);
-      });
+          Object.entries(schedule).forEach(([key, [withGst, withoutGst]]) => {
+            const [year, quarter] = key.split("-");
+            const colName = `${quarter} ${year}`;
+            const value = showGST ? withGst : withoutGst;
+            row[colName] = Math.round(value * 100) / 100;
+            totalAmount += showGST ? withGst : withoutGst;
+            allQuarters.add(colName);
+          });
 
-      // Fix: Ensure total is properly calculated and displayed
-      const totalColumnName = `Total (${product.warrantyYears} Years)`;
-      row[totalColumnName] = Math.round(totalAmount * 100) / 100;
-      quarterlyRows.push(row);
-    });
+          const finalTotal = Math.round(totalAmount * 100) / 100;
+          row[`Total (${product.warrantyYears} Years)`] = finalTotal;
+          
+          console.log(`✅ Product ${product.itemName}: Total = ₹${finalTotal.toLocaleString()}`);
+          quarterlyRows.push(row);
+        });
 
-    // Sort quarters chronologically
-    const quarterOrder = ["JFM", "AMJ", "JAS", "OND"];
-    const sortedQuarters = Array.from(allQuarters).sort((a, b) => {
-      const [qA, yearA] = a.split(" ");
-      const [qB, yearB] = b.split(" ");
-      if (yearA !== yearB) return parseInt(yearA) - parseInt(yearB);
-      return quarterOrder.indexOf(qA) - quarterOrder.indexOf(qB);
-    });
+        // FIXED: Proper chronological sorting of quarters
+        const quarterOrder = ["JFM", "AMJ", "JAS", "OND"];
+        const sortedQuarters = Array.from(allQuarters).sort((a, b) => {
+          const [qA, yearA] = a.split(" ");
+          const [qB, yearB] = b.split(" ");
+          
+          // Parse years as integers for proper comparison
+          const yearNumA = parseInt(yearA);
+          const yearNumB = parseInt(yearB);
+          
+          // First sort by year
+          if (yearNumA !== yearNumB) {
+            return yearNumA - yearNumB;
+          }
+          
+          // Then sort by quarter within the same year
+          return quarterOrder.indexOf(qA) - quarterOrder.indexOf(qB);
+        });
 
-    // Add missing quarter columns with 0 values
-    quarterlyRows.forEach((row) => {
-      sortedQuarters.forEach((quarter) => {
-        if (!(quarter in row)) {
-          row[quarter] = 0.0;
+        console.log("🔍 Quarter Sorting Debug:", {
+          allQuarters: Array.from(allQuarters),
+          sortedQuarters: sortedQuarters,
+          quarterOrder: quarterOrder
+        });
+
+        // Add missing quarter columns (set to 0) for each product
+        quarterlyRows.forEach((row) => {
+          sortedQuarters.forEach((quarter) => {
+            if (!(quarter in row)) {
+              row[quarter] = 0.0;
+            }
+          });
+        });
+
+        // Calculate grand totals
+        const totals = {
+          itemName: "Grand Total",
+          uatDate: "",
+          warrantyStart: "",
+          cost: "",
+          quantity: "",
+          location: "",
+          source: "",
+        };
+
+        // Sum each quarter column
+        sortedQuarters.forEach((quarter) => {
+          totals[quarter] = quarterlyRows.reduce(
+            (sum, row) => sum + (row[quarter] || 0),
+            0
+          );
+          totals[quarter] = Math.round(totals[quarter] * 100) / 100;
+        });
+
+        // Calculate grand total for all warranty years
+        let grandTotal = 0;
+        quarterlyRows.forEach((row) => {
+          const totalColumns = Object.keys(row).filter(
+            (key) => key.includes("Total (") && key.includes(" Years)")
+          );
+          totalColumns.forEach((totalCol) => {
+            grandTotal += row[totalCol] || 0;
+          });
+        });
+
+        // Add total columns for each unique warranty period
+        const uniqueWarrantyPeriods = [...new Set(warrantyProducts.map(p => p.warrantyYears))];
+        uniqueWarrantyPeriods.forEach((years) => {
+          const totalColName = `Total (${years} Years)`;
+          if (!totals[totalColName]) {
+            totals[totalColName] = quarterlyRows
+              .filter((row) => row[totalColName] !== undefined)
+              .reduce((sum, row) => sum + (row[totalColName] || 0), 0);
+            totals[totalColName] = Math.round(totals[totalColName] * 100) / 100;
+          }
+        });
+
+        // If there's only one warranty period, use that for the main total
+        if (uniqueWarrantyPeriods.length === 1) {
+          const mainTotalCol = `Total (${uniqueWarrantyPeriods[0]} Years)`;
+          totals[mainTotalCol] = Math.round(grandTotal * 100) / 100;
         }
-      });
-    });
 
-    // Calculate grand totals
-    const totals = {
-      itemName: "Grand Total",
-      uatDate: "",
-      warrantyStart: "",
-      cost: "",
-      quantity: "",
-      location: "",
-      source: "",
-    };
+        console.log(`🎯 Grand Total Calculation:`, {
+          grandTotal: grandTotal.toFixed(2),
+          productCount: quarterlyRows.length,
+          quarterCount: sortedQuarters.length,
+          firstQuarter: sortedQuarters[0],
+          lastQuarter: sortedQuarters[sortedQuarters.length - 1]
+        });
 
-    // Sum up all quarter amounts
-    sortedQuarters.forEach((quarter) => {
-      totals[quarter] = quarterlyRows.reduce(
-        (sum, row) => sum + (row[quarter] || 0),
-        0
-      );
-      totals[quarter] = Math.round(totals[quarter] * 100) / 100;
-    });
+        const finalSchedule = [...quarterlyRows, totals];
+        setCalculatedSchedule(finalSchedule);
 
-    // Calculate grand total for all years - Fix: Properly identify total columns
-    const sampleRow = quarterlyRows[0];
-    if (sampleRow) {
-      const totalColumns = Object.keys(sampleRow).filter(
-        (key) => key.includes("Total (") && key.includes(" Years)")
-      );
-
-      totalColumns.forEach((totalCol) => {
-        totals[totalCol] = quarterlyRows.reduce(
-          (sum, row) => sum + (row[totalCol] || 0),
-          0
+        // Store in Redux for payment tracker
+        dispatch(
+          storeWarrantyCalculations({
+            calculations: quarterlyRows,
+            metadata: {
+              totalProducts: warrantyProducts.length,
+              totalValue: grandTotal,
+              calculatedAt: new Date().toISOString(),
+              location: location,
+              quarters: sortedQuarters,
+              showGST: showGST,
+            },
+          })
         );
-        totals[totalCol] = Math.round(totals[totalCol] * 100) / 100;
-      });
-    }
 
-    const finalSchedule = [...quarterlyRows, totals];
-    setCalculatedSchedule(finalSchedule);
+        setActiveTab("schedule");
+      } catch (error) {
+        console.error("Error calculating warranty schedule:", error);
+        alert("Error calculating warranty schedule. Please check your data.");
+      } finally {
+        setIsCalculating(false);
+      }
+    }, [
+      warrantyProducts,
+      showGST,
+      calculateWarrantySchedule,
+      location,
+      dispatch,
+    ]);
 
-    // Store in Redux for payment tracker
-    const grandTotal = totals[Object.keys(totals).find(key => key.includes("Total (")) || ""] || 0;
-    
-    dispatch(
-      storeWarrantyCalculations({
-        calculations: quarterlyRows,
-        metadata: {
-          totalProducts: warrantyProducts.length,
-          totalValue: grandTotal,
-          calculatedAt: new Date().toISOString(),
-          location: location,
-          quarters: sortedQuarters,
-        },
-      })
-    );
+   // Export to Excel (fixed to match UI column ordering)
+    const exportToExcel = useCallback(() => {
+      if (!calculatedSchedule || calculatedSchedule.length === 0) {
+        alert("No data to export. Please calculate the warranty schedule first.");
+        return;
+      }
 
-    setActiveTab("schedule");
-  } catch (error) {
-    console.error("Error calculating warranty schedule:", error);
-    alert("Error calculating warranty schedule. Please check your data.");
-  } finally {
-    setIsCalculating(false);
-  }
-}, [
-  warrantyProducts,
-  showGST,
-  calculateWarrantySchedule,
-  location,
-  dispatch,
-])
+      try {
+        // Collect all unique quarters from the UI display format (QTR YYYY)
+        const quarterSet = new Set();
+        const totalColumns = new Set();
+        
+        calculatedSchedule.forEach((row) => {
+          Object.keys(row).forEach((key) => {
+            // Look for the UI display format: "JFM 2021", "AMJ 2021", etc.
+            if (key.match(/^(JFM|AMJ|JAS|OND) \d{4}$/)) {
+              quarterSet.add(key);
+            } else if (key.includes("Total (") && key.includes(" Years)")) {
+              totalColumns.add(key);
+            }
+          });
+        });
 
-  // Export to Excel (compatible with VirtualDataTable)
-  const exportToExcel = useCallback(() => {
-    if (!calculatedSchedule || calculatedSchedule.length === 0) {
-      alert("No data to export. Please calculate the warranty schedule first.");
-      return;
-    }
+        // Sort quarters chronologically (same logic as UI)
+        const quarterOrder = ["JFM", "AMJ", "JAS", "OND"];
+        const sortedQuarters = Array.from(quarterSet).sort((a, b) => {
+          const [qA, yearA] = a.split(" ");
+          const [qB, yearB] = b.split(" ");
+          
+          const yearNumA = parseInt(yearA);
+          const yearNumB = parseInt(yearB);
+          
+          // First sort by year
+          if (yearNumA !== yearNumB) {
+            return yearNumA - yearNumB;
+          }
+          
+          // Then sort by quarter within the same year
+          return quarterOrder.indexOf(qA) - quarterOrder.indexOf(qB);
+        });
 
-    try {
-      const ws = XLSX.utils.json_to_sheet(calculatedSchedule);
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, "Warranty Schedule");
+        console.log("🔍 Export Quarter Debug:", {
+          allQuarters: Array.from(quarterSet),
+          sortedQuarters: sortedQuarters,
+          firstQuarter: sortedQuarters[0],
+          lastQuarter: sortedQuarters[sortedQuarters.length - 1]
+        });
 
-      const fileName = `Warranty_Schedule_${
-        showGST ? "With_GST" : "Without_GST"
-      }_${new Date().toISOString().split("T")[0]}.xlsx`;
-      XLSX.writeFile(wb, fileName);
+        // Define the correct column order for export
+        const baseColumns = ["Item Name", "UAT Date", "Warranty Start", "Cost", "Quantity", "Location"];
+        const orderedColumns = [...baseColumns, ...sortedQuarters, ...Array.from(totalColumns)];
 
-      console.log(`✅ Exported warranty schedule to ${fileName}`);
-    } catch (error) {
-      console.error("Export error:", error);
-      alert("Error exporting to Excel. Please try again.");
-    }
-  }, [calculatedSchedule, showGST]);
+        // Transform data with proper column ordering
+        const exportData = calculatedSchedule.map((row) => {
+          const transformedRow = {};
+          
+          // Copy basic fields with proper headers in correct order
+          transformedRow["Item Name"] = row.itemName;
+          transformedRow["UAT Date"] = row.uatDate;
+          transformedRow["Warranty Start"] = row.warrantyStart;
+          transformedRow["Cost"] = row.cost ? `₹${row.cost.toLocaleString()}` : "";
+          transformedRow["Quantity"] = row.quantity || "";
+          transformedRow["Location"] = row.location || "";
+          
+          // Add quarter columns in chronological order using UI display format
+          sortedQuarters.forEach((quarterDisplay) => {
+            // quarterDisplay is already in "QTR YYYY" format from the UI
+            const value = row[quarterDisplay];
+            transformedRow[quarterDisplay] = value ? `₹${value.toLocaleString()}` : "₹0";
+          });
+          
+          // Add total columns
+          Array.from(totalColumns).forEach((totalCol) => {
+            const value = row[totalCol];
+            transformedRow[totalCol] = value ? `₹${value.toLocaleString()}` : "₹0";
+          });
+          
+          return transformedRow;
+        });
+
+        // Create worksheet with ordered columns
+        const ws = XLSX.utils.json_to_sheet(exportData, { header: orderedColumns });
+        
+        // Auto-resize columns for better readability
+        const colWidths = [];
+        orderedColumns.forEach((header, index) => {
+          let maxWidth = header.length;
+          exportData.forEach((row) => {
+            const cellValue = String(row[header] || "");
+            maxWidth = Math.max(maxWidth, cellValue.length);
+          });
+          // Set reasonable min/max widths
+          colWidths[index] = { wch: Math.min(Math.max(maxWidth + 2, 10), 25) };
+        });
+        
+        ws['!cols'] = colWidths;
+
+        // Create workbook and add worksheet
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Warranty Schedule");
+
+        // Generate filename with current settings
+        const fileName = `Warranty_Schedule_${
+          showGST ? "With_GST" : "Without_GST"
+        }_${new Date().toISOString().split("T")[0]}.xlsx`;
+        
+        // Write file
+        XLSX.writeFile(wb, fileName);
+
+        console.log(`✅ Exported warranty schedule to ${fileName} with chronological quarter ordering`);
+        console.log(`📅 Quarter order: ${sortedQuarters.join(' → ')}`);
+      } catch (error) {
+        console.error("Export error:", error);
+        alert("Error exporting to Excel. Please try again.");
+      }
+    }, [calculatedSchedule, showGST]);
 
   // Remove product
   const removeProduct = useCallback((productId) => {

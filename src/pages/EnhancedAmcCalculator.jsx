@@ -270,22 +270,105 @@ const EnhancedAmcCalculator = () => {
   const [viewMode, setViewMode] = useState("table"); // "table", "charts", or "quarterly"
 
   // Process Excel data when available (MUST be defined before useAMCCache)
+ const parseExcelDate = (dateValue) => {
+  if (!dateValue) return new Date().toISOString().split("T")[0];
+  
+  // Handle various date formats
+  const dateStr = String(dateValue).trim();
+  
+  // If it's already a valid date string
+  if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+    return dateStr;
+  }
+  
+  // Handle Excel serial numbers (like 44562 for Oct 18, 2021)
+  if (!isNaN(dateStr) && dateStr.length <= 6) {
+    const serialNumber = parseInt(dateStr);
+    if (serialNumber > 0 && serialNumber < 100000) {
+      // FIXED: Excel epoch calculation accounting for the 1900 leap year bug
+      // Excel treats 1900-01-01 as day 1, but there's a leap year bug
+      const excelEpoch = new Date(1900, 0, 1); // January 1, 1900
+      let resultDate = new Date(excelEpoch.getTime() + (serialNumber - 1) * 24 * 60 * 60 * 1000);
+      
+      // Additional correction for dates after Feb 28, 1900 due to Excel's leap year bug
+      // Excel incorrectly thinks 1900 was a leap year and includes Feb 29, 1900
+      if (serialNumber > 59) { // 59 = Feb 28, 1900 in Excel
+        resultDate = new Date(resultDate.getTime() - 24 * 60 * 60 * 1000); // Subtract 1 day
+      }
+      
+      return resultDate.toISOString().split("T")[0];
+    }
+  }
+  
+  // Handle DD-MMM-YY format specifically (like "18-Oct-21") - YOUR MAIN CASE
+  const ddMmmYyMatch = dateStr.match(/^(\d{1,2})-([A-Za-z]{3})-(\d{2})$/);
+  if (ddMmmYyMatch) {
+    const [, day, monthStr, year] = ddMmmYyMatch;
+    const monthMap = {
+      'jan': '01', 'feb': '02', 'mar': '03', 'apr': '04',
+      'may': '05', 'jun': '06', 'jul': '07', 'aug': '08',
+      'sep': '09', 'oct': '10', 'nov': '11', 'dec': '12'
+    };
+    const month = monthMap[monthStr.toLowerCase()];
+    if (month) {
+      // Handle 2-digit years - assume 2000s for years 00-99
+      const fullYear = `20${year}`;
+      const formattedDate = `${fullYear}-${month}-${day.padStart(2, '0')}`;
+      console.log(`📅 Parsed ${dateStr} -> ${formattedDate}`);
+      return formattedDate;
+    }
+  }
+  
+  // Handle DD-MMM-YYYY format (4-digit year)
+  const ddMmmYyyyMatch = dateStr.match(/^(\d{1,2})-([A-Za-z]{3})-(\d{4})$/);
+  if (ddMmmYyyyMatch) {
+    const [, day, monthStr, year] = ddMmmYyyyMatch;
+    const monthMap = {
+      'jan': '01', 'feb': '02', 'mar': '03', 'apr': '04',
+      'may': '05', 'jun': '06', 'jul': '07', 'aug': '08',
+      'sep': '09', 'oct': '10', 'nov': '11', 'dec': '12'
+    };
+    const month = monthMap[monthStr.toLowerCase()];
+    if (month) {
+      const formattedDate = `${year}-${month}-${day.padStart(2, '0')}`;
+      console.log(`📅 Parsed ${dateStr} -> ${formattedDate}`);
+      return formattedDate;
+    }
+  }
+  
+  // Handle text dates like "Oct 18, 2021", etc. - fallback
+  try {
+    const parsedDate = new Date(dateStr);
+    if (!isNaN(parsedDate.getTime())) {
+      const formattedDate = parsedDate.toISOString().split("T")[0];
+      console.log(`📅 Fallback parsed ${dateStr} -> ${formattedDate}`);
+      return formattedDate;
+    }
+  } catch (error) {
+    console.warn(`⚠️ Failed to parse date: ${dateStr}`);
+  }
+  
+  // Default fallback
+  const today = new Date().toISOString().split("T")[0];
+  console.warn(`⚠️ Using today's date as fallback for: ${dateStr} -> ${today}`);
+  return today;
+};
+
+
   const processedExcelData = useMemo(() => {
     let processed = [];
 
     // Process Excel data if available
     if (excelData && Object.keys(excelData).length > 0) {
-      // Get first sheet data or combine multiple sheets
       const firstSheetName = Object.keys(excelData)[0];
       const sheetData = excelData[firstSheetName] || [];
 
-      // Normalize the data structure to handle your Excel format
       processed = sheetData
         .map((row, index) => ({
           id: `excel_${index}`,
           productName:
-            row["Item Name"] || // Your Excel column
-            row["Product Name"] || // Alternative
+            row["Item Name"] || 
+            row["Product Name"] || 
             row.productName ||
             row.name ||
             `Product ${index + 1}`,
@@ -297,15 +380,11 @@ const EnhancedAmcCalculator = () => {
                 row.cost ||
                 0
             );
-            // Handle various formats: "14,53,10,862.00", "₹14,53,10,862", "1453108620"
             costStr = costStr
-              .replace(/[₹$,\s]/g, "") // Remove currency symbols, commas, spaces
-              .replace(/\.00$/, "") // Remove trailing .00
+              .replace(/[₹$,\s]/g, "")
+              .replace(/\.00$/, "")
               .trim();
-
             const parsed = parseFloat(costStr || 0);
-
-            // Log suspicious values for debugging
             if (parsed > 0 && parsed < 1000) {
               console.warn(
                 `⚠️ Small cost value detected for ${
@@ -313,25 +392,27 @@ const EnhancedAmcCalculator = () => {
                 }: ₹${parsed}. Original: ${row["Cost"]}`
               );
             }
-
             return parsed;
           })(),
           location: row.Location || row.location || "Unknown",
-          uatDate:
+          // ENHANCED DATE PARSING HERE:
+          uatDate: parseExcelDate(
             row["UAT Date"] ||
             row.uatDate ||
             row.date ||
-            new Date().toISOString().split("T")[0],
+            row["Date"] ||
+            row["Installation Date"] ||
+            row["Go Live Date"]
+          ),
           quantity: parseInt(
             String(row.Quantity || row.quantity || 1).replace(/,/g, "") || 1
           ),
           category: row.Category || row.category || "General",
           roi: parseFloat(
             String(row.ROI || row.roi || 0).replace(/[(),%]/g, "") || 0
-          ), // Add ROI from your Excel
+          ),
         }))
         .filter((item) => {
-          // Enhanced filtering with logging
           if (!item.productName) {
             console.warn("⚠️ Product filtered out: Missing product name");
             return false;
@@ -342,13 +423,14 @@ const EnhancedAmcCalculator = () => {
             );
             return false;
           }
+          // Log date parsing results
+          console.log(`📅 Date parsed for ${item.productName}: ${item.uatDate}`);
           return true;
-        }); // Filter out invalid entries
+        });
     }
 
     // Add manual products
     const combinedData = [...processed, ...manualProducts];
-
     return combinedData;
   }, [excelData, hasExcelData, fileName, manualProducts]);
 
@@ -1004,7 +1086,7 @@ const EnhancedAmcCalculator = () => {
                 gap: "12px",
               }}
             >
-              🚀 Enhanced AMC Calculator
+              🚀 AMC Calculator
             </h1>
             <p
               style={{
@@ -1014,9 +1096,7 @@ const EnhancedAmcCalculator = () => {
                 lineHeight: 1.5,
               }}
             >
-              High-performance AMC calculation engine supporting 100,000+
-              products with Web Workers, virtual scrolling, and intelligent
-              caching.
+              Get the Amc Schedule in just one click !
             </p>
           </div>
 
@@ -1160,7 +1240,7 @@ const EnhancedAmcCalculator = () => {
               }}
             >
               {showDataPreview
-                ? "🙈 Hide Data Preview"
+                ? " Hide Data Preview"
                 : "👁 Show Data Preview (First 5 rows)"}
             </button>
           </div>
@@ -2548,7 +2628,7 @@ const EnhancedAmcCalculator = () => {
                   transition: "all 0.2s ease",
                 }}
               >
-                📅 Quarterly View
+                📅 Uploaded Data
               </button>
             </div>
           </div>
@@ -2752,7 +2832,7 @@ const EnhancedAmcCalculator = () => {
                   viewMode === "quarterly" ? "none" : "2px solid transparent",
               }}
             >
-              📋 Quarterly Details
+              📋Your Data
             </button>
           </div>
 

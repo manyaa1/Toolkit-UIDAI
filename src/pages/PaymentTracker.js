@@ -29,13 +29,7 @@ const PaymentTracker = () => {
   const [currentTime, setCurrentTime] = useState('');
   const [selectedQuarter, setSelectedQuarter] = useState('all');
 
-  // Redirect if no data available
-  useEffect(() => {
-    if (!uploadedFile || !amcCalculatedData) {
-      navigate('/');
-      return;
-    }
-  }, [uploadedFile, amcCalculatedData, navigate]);
+  
 
   // Initialize responsive behavior and real-time clock
   useEffect(() => {

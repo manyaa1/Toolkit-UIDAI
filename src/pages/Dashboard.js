@@ -131,13 +131,6 @@ const ExcelUploadSection = () => {
         return;
       }
 
-      console.log("📁 File received:", {
-        name: file.name,
-        size: file.size,
-        type: file.type,
-        lastModified: new Date(file.lastModified).toISOString(),
-      });
-
       const validTypes = [
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         "application/vnd.ms-excel",
@@ -155,8 +148,6 @@ const ExcelUploadSection = () => {
         return;
       }
 
-      console.log("✅ File type validation passed");
-      console.log("🚀 Dispatching processExcelFile action...");
 
       try {
         // Dispatch the action and wait for it to complete
@@ -796,14 +787,14 @@ function EnhancedUIDAIDashboard() {
   );
 
   // Tool data for filtering - Enhanced with data availability indicators
-  // Tool data for filtering - Enhanced with data availability indicators
+  
   const tools = [
     {
       id: "amc",
       title: "AMC Calculator",
       category: "financial",
       description:
-        "Enhanced AMC calculator with Web Workers, virtual scrolling, and intelligent caching for 100k+ products.",
+        "No more manual AMC calculations — just upload your sheet, and let the tool handle everything!",
       icon: "📊",
       path: "/enhanced-amc-calculator",
       tag: "Financial Planning",
@@ -817,7 +808,7 @@ function EnhancedUIDAIDashboard() {
       title: "Warranty Estimator",
       category: "risk",
       description:
-        "Comprehensive warranty period estimation with coverage analysis, geographical mapping, and automated notification systems.",
+        "Your digital assistant for warranty tracking — smart calculator, export-ready, and easy to use.",
       icon: "🛡️",
       path: "/warranty-calculator",
       tag: "Risk Management",
@@ -1172,19 +1163,12 @@ function EnhancedUIDAIDashboard() {
                 marginBottom: "16px",
               }}
             >
-              <h1
-                style={{
-                  fontSize: "1.75rem",
-                  fontWeight: 800,
-                  background:
-                    "linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)",
-                  WebkitBackgroundClip: "text",
-                  WebkitTextFillColor: "transparent",
-                  margin: 0,
-                }}
-              >
-                SUVIDHA SETU
-              </h1>
+            <h1 style={{ fontSize: "1.75rem", fontWeight: 800, margin: 0 }}>
+              <span style={{ color: "#FF9933" }}>SUVIDHA</span>{" "}
+              <span style={{ color: "#138808" }}>SETU</span>
+            </h1>
+
+
               <div
                 style={{
                   fontSize: "0.875rem",
@@ -1217,30 +1201,7 @@ function EnhancedUIDAIDashboard() {
               gap: "12px",
             }}
           >
-            <button
-              onClick={handleToggleSearch}
-              onMouseEnter={() => handleMouseEnterButton("search")}
-              onMouseLeave={handleMouseLeaveButton}
-              style={{
-                padding: "12px 16px",
-                backgroundColor:
-                  hoveredButton === "search"
-                    ? "#3b82f6"
-                    : "rgba(59, 130, 246, 0.1)",
-                color: hoveredButton === "search" ? "white" : "#3b82f6",
-                border: "1px solid rgba(59, 130, 246, 0.3)",
-                borderRadius: "12px",
-                cursor: "pointer",
-                fontSize: "0.875rem",
-                fontWeight: 600,
-                transition: "all 0.2s ease",
-                display: "flex",
-                alignItems: "center",
-                gap: "8px",
-              }}
-            >
-              🔍 Search Tools (Ctrl+K)
-            </button>
+            
 
             <button
               onClick={handleToggleNotifications}
@@ -1331,7 +1292,7 @@ function EnhancedUIDAIDashboard() {
               textAlign: "center",
             }}
           >
-            Enhanced UI/AI Dashboard v2.0
+            Suvidha Setu v1.0
           </div>
         </div>
       </div>

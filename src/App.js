@@ -4,7 +4,7 @@ import { Provider } from "react-redux";
 import store from "./store/store";
 
 import FinalUIDAIDashboard from "./pages/Dashboard";
-import AmcCalculator from "./pages/AmcCalculator";
+
 import EnhancedAmcCalculator from "./pages/EnhancedAmcCalculator";
 import WarrantyCalculator from "./pages/WarrantyCalculator";
 import WarrantyEstimator from "./pages/WarrantyEstimator";
@@ -20,7 +20,7 @@ function App() {
         <div className="App">
           <Routes>
             <Route path="/" element={<FinalUIDAIDashboard />} />
-            <Route path="/amc-calculator" element={<AmcCalculator />} />
+            
             <Route
               path="/enhanced-amc-calculator"
               element={<EnhancedAmcCalculator />}
