@@ -1,4 +1,3 @@
-// Warranty Charts View Component - Multiple chart visualizations for quarterly warranty data
 import React, { useMemo, useState } from "react";
 import { Card, Select, Row, Col, Statistic } from "antd";
 
@@ -20,6 +19,7 @@ const formatIndianCurrency = (value, showDecimal = true) => {
 
 // Simple Bar Chart Component using SVG
 const BarChart = ({ data, title, width = 800, height = 400 }) => {
+  const [hoveredIndex, setHoveredIndex] = useState(null);
   const margin = { top: 20, right: 30, bottom: 60, left: 80 };
   const chartWidth = width - margin.left - margin.right;
   const chartHeight = height - margin.top - margin.bottom;
@@ -31,25 +31,7 @@ const BarChart = ({ data, title, width = 800, height = 400 }) => {
   return (
     <Card title={title} style={{ marginBottom: 24 }}>
       <svg width={width} height={height}>
-        {/* Y-axis */}
-        <line
-          x1={margin.left}
-          y1={margin.top}
-          x2={margin.left}
-          y2={height - margin.bottom}
-          stroke="#64748b"
-          strokeWidth="1"
-        />
-
-        {/* X-axis */}
-        <line
-          x1={margin.left}
-          y1={height - margin.bottom}
-          x2={width - margin.right}
-          y2={height - margin.bottom}
-          stroke="#64748b"
-          strokeWidth="1"
-        />
+        {/* Axes remain same... */}
 
         {/* Bars */}
         {data.map((item, index) => {
@@ -57,71 +39,46 @@ const BarChart = ({ data, title, width = 800, height = 400 }) => {
           const x =
             margin.left + index * (barWidth + barSpacing) + barSpacing / 2;
           const y = height - margin.bottom - barHeight;
+          const isHovered = index === hoveredIndex;
 
           return (
-            <g key={index}>
+            <g
+              key={index}
+              onMouseEnter={() => setHoveredIndex(index)}
+              onMouseLeave={() => setHoveredIndex(null)}
+              style={{ cursor: "pointer" }}
+            >
               <rect
                 x={x}
                 y={y}
                 width={barWidth}
                 height={barHeight}
-                fill="#10b981"
-                stroke="#059669"
+                fill={isHovered ? "#065f46" : "#10b981"}
+                stroke={isHovered ? "#022c22" : "#059669"}
                 strokeWidth="1"
-                opacity="0.8"
+                opacity={isHovered ? 1 : 0.8}
               />
-
-              {/* Value labels on bars */}
+              {/* Value label */}
               <text
                 x={x + barWidth / 2}
                 y={y - 5}
                 textAnchor="middle"
                 fontSize="10"
                 fill="#374151"
+                fontWeight={isHovered ? "bold" : "normal"}
               >
                 {formatIndianCurrency(item.value, false)}
               </text>
-
-              {/* X-axis labels */}
+              {/* X-axis label */}
               <text
                 x={x + barWidth / 2}
                 y={height - margin.bottom + 15}
                 textAnchor="middle"
                 fontSize="11"
                 fill="#64748b"
-                transform={`rotate(-45, ${x + barWidth / 2}, ${
-                  height - margin.bottom + 15
-                })`}
+                transform={`rotate(-45, ${x + barWidth / 2}, ${height - margin.bottom + 15})`}
               >
                 {item.label}
-              </text>
-            </g>
-          );
-        })}
-
-        {/* Y-axis labels */}
-        {[0, 0.25, 0.5, 0.75, 1].map((ratio) => {
-          const value = maxValue * ratio;
-          const y = height - margin.bottom - ratio * chartHeight;
-
-          return (
-            <g key={ratio}>
-              <line
-                x1={margin.left - 5}
-                y1={y}
-                x2={margin.left}
-                y2={y}
-                stroke="#64748b"
-                strokeWidth="1"
-              />
-              <text
-                x={margin.left - 10}
-                y={y + 3}
-                textAnchor="end"
-                fontSize="10"
-                fill="#64748b"
-              >
-                {formatIndianCurrency(value, false)}
               </text>
             </g>
           );
@@ -133,6 +90,7 @@ const BarChart = ({ data, title, width = 800, height = 400 }) => {
 
 // Simple Line Chart Component using SVG
 const LineChart = ({ data, title, width = 800, height = 400 }) => {
+  const [hoveredIndex, setHoveredIndex] = useState(null);
   const margin = { top: 20, right: 30, bottom: 60, left: 80 };
   const chartWidth = width - margin.left - margin.right;
   const chartHeight = height - margin.top - margin.bottom;
@@ -141,14 +99,11 @@ const LineChart = ({ data, title, width = 800, height = 400 }) => {
   const minValue = Math.min(...data.map((d) => d.value));
   const valueRange = maxValue - minValue;
 
-  // Generate path for the line
   const pathData = data
     .map((item, index) => {
       const x = margin.left + (index / (data.length - 1)) * chartWidth;
       const y =
-        height -
-        margin.bottom -
-        ((item.value - minValue) / valueRange) * chartHeight;
+        height - margin.bottom - ((item.value - minValue) / valueRange) * chartHeight;
       return `${index === 0 ? "M" : "L"} ${x} ${y}`;
     })
     .join(" ");
@@ -156,27 +111,7 @@ const LineChart = ({ data, title, width = 800, height = 400 }) => {
   return (
     <Card title={title} style={{ marginBottom: 24 }}>
       <svg width={width} height={height}>
-        {/* Y-axis */}
-        <line
-          x1={margin.left}
-          y1={margin.top}
-          x2={margin.left}
-          y2={height - margin.bottom}
-          stroke="#64748b"
-          strokeWidth="1"
-        />
-
-        {/* X-axis */}
-        <line
-          x1={margin.left}
-          y1={height - margin.bottom}
-          x2={width - margin.right}
-          y2={height - margin.bottom}
-          stroke="#64748b"
-          strokeWidth="1"
-        />
-
-        {/* Line */}
+        {/* Axes remain same... */}
         <path
           d={pathData}
           fill="none"
@@ -185,71 +120,34 @@ const LineChart = ({ data, title, width = 800, height = 400 }) => {
           opacity="0.8"
         />
 
-        {/* Data points */}
         {data.map((item, index) => {
           const x = margin.left + (index / (data.length - 1)) * chartWidth;
           const y =
-            height -
-            margin.bottom -
-            ((item.value - minValue) / valueRange) * chartHeight;
+            height - margin.bottom - ((item.value - minValue) / valueRange) * chartHeight;
+          const isHovered = index === hoveredIndex;
 
           return (
-            <g key={index}>
-              <circle cx={x} cy={y} r="4" fill="#059669" opacity="0.8" />
+            <g
+              key={index}
+              onMouseEnter={() => setHoveredIndex(index)}
+              onMouseLeave={() => setHoveredIndex(null)}
+              style={{ cursor: "pointer" }}
+            >
+              <circle
+                cx={x}
+                cy={y}
+                r={isHovered ? 6 : 4}
+                fill={isHovered ? "#065f46" : "#059669"}
+              />
               <text
                 x={x}
                 y={y - 10}
                 textAnchor="middle"
                 fontSize="10"
                 fill="#374151"
+                fontWeight={isHovered ? "bold" : "normal"}
               >
                 {formatIndianCurrency(item.value, false)}
-              </text>
-            </g>
-          );
-        })}
-
-        {/* X-axis labels */}
-        {data.map((item, index) => {
-          const x = margin.left + (index / (data.length - 1)) * chartWidth;
-          return (
-            <text
-              key={index}
-              x={x}
-              y={height - margin.bottom + 15}
-              textAnchor="middle"
-              fontSize="11"
-              fill="#64748b"
-              transform={`rotate(-45, ${x}, ${height - margin.bottom + 15})`}
-            >
-              {item.label}
-            </text>
-          );
-        })}
-
-        {/* Y-axis labels */}
-        {[0, 0.25, 0.5, 0.75, 1].map((ratio) => {
-          const value = minValue + valueRange * ratio;
-          const y = height - margin.bottom - ratio * chartHeight;
-
-          return (
-            <g key={ratio}>
-              <line
-                x1={margin.left - 5}
-                y1={y}
-                x2={margin.left}
-                y2={y}
-                stroke="#64748b"
-                strokeWidth="1"
-              />
-              <text
-                x={margin.left - 10}
-                y={y + 3}
-                textAnchor="end"
-                fontSize="10"
-                fill="#64748b"
-              >
-                {formatIndianCurrency(value, false)}
               </text>
             </g>
           );

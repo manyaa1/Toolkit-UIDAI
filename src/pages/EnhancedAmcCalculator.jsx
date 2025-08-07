@@ -1,10 +1,5 @@
-// AMC Calculator with Web Workers and Virtual Scrolling
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { useSelector, useDispatch } from "react-redux";
-
-import { Tag } from "antd";
-
-// Import our new performance components
+import { useSelector} from "react-redux";
 import VirtualDataTable from "../components/VirtualDataTable";
 import QuarterlyDataTable from "../components/QuarterlyDataTable";
 import CalculationProgress from "../components/CalculationProgress";
@@ -52,7 +47,7 @@ const ManualProductForm = ({ onAddProduct }) => {
       quantity: parseInt(quantity) || 1,
       location: location.trim(),
       uatDate: uatDate,
-      roi: 0, // This will be ignored in favor of settings.roiRates
+      roi: 0, 
     };
 
     onAddProduct(manualProduct);
@@ -243,8 +238,7 @@ const ManualProductForm = ({ onAddProduct }) => {
 };
 
 const EnhancedAmcCalculator = () => {
-  const dispatch = useDispatch();
-
+ 
   // Redux selectors
   const excelData = useSelector(selectExcelData);
   const hasExcelData = useSelector(selectHasData);
@@ -267,93 +261,142 @@ const EnhancedAmcCalculator = () => {
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [showWithoutGST, setShowWithoutGST] = useState(false);
   const [manualProducts, setManualProducts] = useState([]);
-  const [viewMode, setViewMode] = useState("table"); // "table", "charts", or "quarterly"
+  const [viewMode, setViewMode] = useState("table"); 
+
+  // Update ROI rates array when AMC years change
+  useEffect(() => {
+    setSettings((prev) => {
+      const currentLength = prev.roiRates.length;
+      const newLength = prev.amcYears;
+
+      if (currentLength === newLength) return prev; 
+
+      let newRoiRates = [...prev.roiRates];
+
+      if (newLength > currentLength) {
+        // Add new rates for additional years (default to last rate + 2.5%)
+        const lastRate = newRoiRates[newRoiRates.length - 1] || 30;
+        for (let i = currentLength; i < newLength; i++) {
+          newRoiRates.push(lastRate + (i - currentLength + 1) * 2.5);
+        }
+      } else {
+        // Trim excess rates
+        newRoiRates = newRoiRates.slice(0, newLength);
+      }
+
+      return {
+        ...prev,
+        roiRates: newRoiRates,
+      };
+    });
+  }, [settings.amcYears]);
 
   // Process Excel data when available (MUST be defined before useAMCCache)
- const parseExcelDate = (dateValue) => {
-  if (!dateValue) return new Date().toISOString().split("T")[0];
-  
-  // Handle various date formats
-  const dateStr = String(dateValue).trim();
-  
-  // If it's already a valid date string
-  if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
-    return dateStr;
-  }
-  
-  // Handle Excel serial numbers (like 44562 for Oct 18, 2021)
-  if (!isNaN(dateStr) && dateStr.length <= 6) {
-    const serialNumber = parseInt(dateStr);
-    if (serialNumber > 0 && serialNumber < 100000) {
-      // FIXED: Excel epoch calculation accounting for the 1900 leap year bug
-      // Excel treats 1900-01-01 as day 1, but there's a leap year bug
-      const excelEpoch = new Date(1900, 0, 1); // January 1, 1900
-      let resultDate = new Date(excelEpoch.getTime() + (serialNumber - 1) * 24 * 60 * 60 * 1000);
-      
-      // Additional correction for dates after Feb 28, 1900 due to Excel's leap year bug
-      // Excel incorrectly thinks 1900 was a leap year and includes Feb 29, 1900
-      if (serialNumber > 59) { // 59 = Feb 28, 1900 in Excel
-        resultDate = new Date(resultDate.getTime() - 24 * 60 * 60 * 1000); // Subtract 1 day
-      }
-      
-      return resultDate.toISOString().split("T")[0];
-    }
-  }
-  
-  // Handle DD-MMM-YY format specifically (like "18-Oct-21") - YOUR MAIN CASE
-  const ddMmmYyMatch = dateStr.match(/^(\d{1,2})-([A-Za-z]{3})-(\d{2})$/);
-  if (ddMmmYyMatch) {
-    const [, day, monthStr, year] = ddMmmYyMatch;
-    const monthMap = {
-      'jan': '01', 'feb': '02', 'mar': '03', 'apr': '04',
-      'may': '05', 'jun': '06', 'jul': '07', 'aug': '08',
-      'sep': '09', 'oct': '10', 'nov': '11', 'dec': '12'
-    };
-    const month = monthMap[monthStr.toLowerCase()];
-    if (month) {
-      // Handle 2-digit years - assume 2000s for years 00-99
-      const fullYear = `20${year}`;
-      const formattedDate = `${fullYear}-${month}-${day.padStart(2, '0')}`;
-      console.log(`📅 Parsed ${dateStr} -> ${formattedDate}`);
-      return formattedDate;
-    }
-  }
-  
-  // Handle DD-MMM-YYYY format (4-digit year)
-  const ddMmmYyyyMatch = dateStr.match(/^(\d{1,2})-([A-Za-z]{3})-(\d{4})$/);
-  if (ddMmmYyyyMatch) {
-    const [, day, monthStr, year] = ddMmmYyyyMatch;
-    const monthMap = {
-      'jan': '01', 'feb': '02', 'mar': '03', 'apr': '04',
-      'may': '05', 'jun': '06', 'jul': '07', 'aug': '08',
-      'sep': '09', 'oct': '10', 'nov': '11', 'dec': '12'
-    };
-    const month = monthMap[monthStr.toLowerCase()];
-    if (month) {
-      const formattedDate = `${year}-${month}-${day.padStart(2, '0')}`;
-      console.log(`📅 Parsed ${dateStr} -> ${formattedDate}`);
-      return formattedDate;
-    }
-  }
-  
-  // Handle text dates like "Oct 18, 2021", etc. - fallback
-  try {
-    const parsedDate = new Date(dateStr);
-    if (!isNaN(parsedDate.getTime())) {
-      const formattedDate = parsedDate.toISOString().split("T")[0];
-      console.log(`📅 Fallback parsed ${dateStr} -> ${formattedDate}`);
-      return formattedDate;
-    }
-  } catch (error) {
-    console.warn(`⚠️ Failed to parse date: ${dateStr}`);
-  }
-  
-  // Default fallback
-  const today = new Date().toISOString().split("T")[0];
-  console.warn(`⚠️ Using today's date as fallback for: ${dateStr} -> ${today}`);
-  return today;
-};
+  const parseExcelDate = (dateValue) => {
+    if (!dateValue) return new Date().toISOString().split("T")[0];
 
+    // Handle various date formats
+    const dateStr = String(dateValue).trim();
+
+    // If it's already a valid date string
+    if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      return dateStr;
+    }
+
+    // Handle Excel serial numbers (like 44562 for Oct 18, 2021)
+    if (!isNaN(dateStr) && dateStr.length <= 6) {
+      const serialNumber = parseInt(dateStr);
+      if (serialNumber > 0 && serialNumber < 100000) {
+        
+const excelEpoch = new Date(1900, 0, 1); 
+        let resultDate = new Date(
+          excelEpoch.getTime() + (serialNumber - 1) * 24 * 60 * 60 * 1000
+        );
+
+       
+        // Excel incorrectly thinks 1900 was a leap year and includes Feb 29, 1900
+        if (serialNumber > 59) {
+          // 59 = Feb 28, 1900 in Excel
+          resultDate = new Date(resultDate.getTime() - 24 * 60 * 60 * 1000); // Subtract 1 day
+        }
+
+        return resultDate.toISOString().split("T")[0];
+      }
+    }
+
+    // Handle DD-MMM-YY format specifically (like "18-Oct-21") 
+    const ddMmmYyMatch = dateStr.match(/^(\d{1,2})-([A-Za-z]{3})-(\d{2})$/);
+    if (ddMmmYyMatch) {
+      const [, day, monthStr, year] = ddMmmYyMatch;
+      const monthMap = {
+        jan: "01",
+        feb: "02",
+        mar: "03",
+        apr: "04",
+        may: "05",
+        jun: "06",
+        jul: "07",
+        aug: "08",
+        sep: "09",
+        oct: "10",
+        nov: "11",
+        dec: "12",
+      };
+      const month = monthMap[monthStr.toLowerCase()];
+      if (month) {
+        // Handle 2-digit years - assume 2000s for years 00-99
+        const fullYear = `20${year}`;
+        const formattedDate = `${fullYear}-${month}-${day.padStart(2, "0")}`;
+        
+        return formattedDate;
+      }
+    }
+
+    // Handle DD-MMM-YYYY format (4-digit year)
+    const ddMmmYyyyMatch = dateStr.match(/^(\d{1,2})-([A-Za-z]{3})-(\d{4})$/);
+    if (ddMmmYyyyMatch) {
+      const [, day, monthStr, year] = ddMmmYyyyMatch;
+      const monthMap = {
+        jan: "01",
+        feb: "02",
+        mar: "03",
+        apr: "04",
+        may: "05",
+        jun: "06",
+        jul: "07",
+        aug: "08",
+        sep: "09",
+        oct: "10",
+        nov: "11",
+        dec: "12",
+      };
+      const month = monthMap[monthStr.toLowerCase()];
+      if (month) {
+        const formattedDate = `${year}-${month}-${day.padStart(2, "0")}`;
+        
+        return formattedDate;
+      }
+    }
+
+    // Handle text dates like "Oct 18, 2021"
+    try {
+      const parsedDate = new Date(dateStr);
+      if (!isNaN(parsedDate.getTime())) {
+        const formattedDate = parsedDate.toISOString().split("T")[0];
+        
+        return formattedDate;
+      }
+    } catch (error) {
+      console.warn(`⚠️ Failed to parse date: ${dateStr}`);
+    }
+
+    // Default fallback
+    const today = new Date().toISOString().split("T")[0];
+    console.warn(
+      `⚠️ Using today's date as fallback for: ${dateStr} -> ${today}`
+    );
+    return today;
+  };
 
   const processedExcelData = useMemo(() => {
     let processed = [];
@@ -367,8 +410,8 @@ const EnhancedAmcCalculator = () => {
         .map((row, index) => ({
           id: `excel_${index}`,
           productName:
-            row["Item Name"] || 
-            row["Product Name"] || 
+            row["Item Name"] ||
+            row["Product Name"] ||
             row.productName ||
             row.name ||
             `Product ${index + 1}`,
@@ -395,14 +438,14 @@ const EnhancedAmcCalculator = () => {
             return parsed;
           })(),
           location: row.Location || row.location || "Unknown",
-          // ENHANCED DATE PARSING HERE:
+          // ENHANCED DATE PARSING 
           uatDate: parseExcelDate(
-            row["UAT Date"] ||
-            row.uatDate ||
-            row.date ||
-            row["Date"] ||
-            row["Installation Date"] ||
-            row["Go Live Date"]
+            row["UAT Date"] ||row["UAT DATE"] ||
+              row.uatDate ||
+              row.date ||
+              row["Date"] ||
+              row["Installation Date"] ||
+              row["Go Live Date"]
           ),
           quantity: parseInt(
             String(row.Quantity || row.quantity || 1).replace(/,/g, "") || 1
@@ -423,8 +466,7 @@ const EnhancedAmcCalculator = () => {
             );
             return false;
           }
-          // Log date parsing results
-          console.log(`📅 Date parsed for ${item.productName}: ${item.uatDate}`);
+          
           return true;
         });
     }
@@ -449,7 +491,6 @@ const EnhancedAmcCalculator = () => {
   const {
     isSupported: cacheSupported,
     cachedResult,
-    cacheStatus,
     hasCachedResult,
     storeCachedResult,
     isOnline,
@@ -571,18 +612,9 @@ const EnhancedAmcCalculator = () => {
 
   // Handle AMC calculation
   const handleCalculate = useCallback(async () => {
-    console.log("🔍 Calculate button clicked - checking requirements...");
-    console.log("📋 Current state:", {
-      hasExcelData,
-      isCalculating,
-      workerReady,
-      processedDataCount: processedExcelData.length,
-      excelDataKeys: excelData ? Object.keys(excelData) : [],
-      fileName,
-    });
-
+    
     if (!hasExcelData && processedExcelData.length === 0) {
-      console.log("❌ No Excel data or manual products found");
+      
       alert(
         "Please upload an Excel file from the dashboard or add manual products below"
       );
@@ -590,49 +622,38 @@ const EnhancedAmcCalculator = () => {
     }
 
     if (processedExcelData.length === 0) {
-      console.log("❌ No valid products found");
-      console.log(
-        "🔍 Raw Excel data sample:",
-        excelData ? Object.values(excelData)[0]?.[0] : "No data"
-      );
+    
       alert(
         "No valid products found. Please:\n- Upload an Excel file with Item Name, Cost, and Location columns, OR\n- Add products manually using the form above"
       );
       return;
     }
 
-    if (isCalculating) {
-      console.log("❌ Already calculating");
-      return;
-    }
+    //if (isCalculating) {
+    //  console.log("❌ Already calculating");
+    //  return;
+    //}
 
     if (!workerReady) {
-      console.log("❌ Web Worker not ready");
+      
       alert(
         "Calculation engine is loading. Please wait a moment and try again."
       );
       return;
     }
 
-    console.log("🚀 Starting AMC calculation with settings:", settings);
-    console.log("📊 Processing", processedExcelData.length, "products");
-    console.log("📋 Sample product data:", processedExcelData[0]);
-
     try {
-      // Check for cached results first
+      
       if (hasCachedResult && useCache) {
-        console.log("⚡ Loading from cache...");
-        // The cached result will be automatically used via currentResults
+        
         return;
       }
 
       // Start fresh calculation
-      console.log("🔄 Starting fresh calculation...");
       await calculateAMCForDataset(processedExcelData, settings);
 
       // Store results in cache after successful calculation
       if (results.length > 0) {
-        console.log("💾 Storing results in cache...");
         await storeCachedResult(results, {
           timestamp: Date.now(),
           settings: { ...settings },
@@ -681,7 +702,7 @@ const EnhancedAmcCalculator = () => {
           }.xlsx`
         );
       } catch (error) {
-        console.error("Quarterly export error:", error);
+        
         alert("Failed to export Excel file. Please try again.");
       }
     },
@@ -722,7 +743,6 @@ const EnhancedAmcCalculator = () => {
 
         // Main AMC Schedule sheet - single row per product
 
-        // First, collect ALL unique quarters from ALL products to determine column order
         const allQuartersSet = new Set();
         data.forEach((product) => {
           if (product.quarters) {
@@ -830,7 +850,7 @@ const EnhancedAmcCalculator = () => {
           "Quarter Totals"
         );
 
-        // Split-Wise Breakdown Sheet (matching Python implementation)
+        // Split-Wise Breakdown Sheet 
         const splitRows = [];
         data.forEach((product) => {
           if (product.splitDetails) {
@@ -964,7 +984,7 @@ const EnhancedAmcCalculator = () => {
       // Look for quarter columns in ALL products to collect complete quarter set
       currentResults.forEach((product) => {
         Object.keys(product).forEach((key) => {
-          // Check if key matches quarter pattern (e.g., "JFM-2024", "AMJ-2025")
+          
           if (key.match(/^[A-Z]{3}-\d{4}$/)) {
             quarterSet.add(key);
           }
@@ -1000,8 +1020,6 @@ const EnhancedAmcCalculator = () => {
     return [...baseColumns, ...quarterColumns];
   }, [currentResults]);
 
-  // Note: Auto-caching moved to handleCalculate function to prevent infinite loops
-
   // Cleanup worker on unmount
   useEffect(() => {
     return () => {
@@ -1009,7 +1027,6 @@ const EnhancedAmcCalculator = () => {
     };
   }, [terminate]);
 
-  // Styles matching the original dashboard design
   const containerStyle = {
     minHeight: "100vh",
     background:
@@ -1774,6 +1791,11 @@ const EnhancedAmcCalculator = () => {
                 <option value={3}>3 Years</option>
                 <option value={4}>4 Years</option>
                 <option value={5}>5 Years</option>
+                <option value={6}>6 Years</option>
+                <option value={7}>7 Years</option>
+                <option value={8}>8 Years</option>
+                <option value={9}>9 Years</option>
+                <option value={10}>10 Years</option>
               </select>
             </div>
 
@@ -1831,41 +1853,98 @@ const EnhancedAmcCalculator = () => {
                 color: "#374151",
               }}
             >
-              ROI Rates (%)
+              ROI Rates (%) - {settings.amcYears} Year
+              {settings.amcYears > 1 ? "s" : ""}
             </label>
-            <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
-              {settings.roiRates.map((rate, index) => (
-                <div
-                  key={index}
-                  style={{ display: "flex", alignItems: "center", gap: "8px" }}
-                >
-                  <span style={{ fontSize: "0.875rem", color: "#4b5563" }}>
-                    Year {index + 1}:
-                  </span>
-                  <input
-                    type="number"
-                    value={rate}
-                    onChange={(e) => {
-                      const newRates = [...settings.roiRates];
-                      newRates[index] = parseFloat(e.target.value) || 0;
-                      setSettings((prev) => ({ ...prev, roiRates: newRates }));
-                    }}
-                    min="0"
-                    max="50"
-                    step="0.5"
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns:
+                  settings.amcYears <= 5
+                    ? "repeat(auto-fit, minmax(150px, 1fr))"
+                    : "repeat(auto-fit, minmax(120px, 1fr))",
+                gap: "12px",
+                maxWidth: "100%",
+              }}
+            >
+              {Array.from({ length: settings.amcYears }, (_, index) => {
+                const rate = settings.roiRates[index] || 0;
+                return (
+                  <div
+                    key={index}
                     style={{
-                      width: "80px",
-                      padding: "4px 8px",
-                      border: "1px solid #d1d5db",
-                      borderRadius: "4px",
-                      fontSize: "0.875rem",
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      gap: "4px",
+                      padding: "12px",
+                      backgroundColor: "#f8fafc",
+                      border: "1px solid #e2e8f0",
+                      borderRadius: "8px",
                     }}
-                  />
-                  <span style={{ fontSize: "0.75rem", color: "#6b7280" }}>
-                    %
-                  </span>
-                </div>
-              ))}
+                  >
+                    <span
+                      style={{
+                        fontSize: "0.875rem",
+                        color: "#4b5563",
+                        fontWeight: 600,
+                        marginBottom: "4px",
+                      }}
+                    >
+                      Year {index + 1}
+                    </span>
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "4px",
+                      }}
+                    >
+                      <input
+                        type="number"
+                        value={rate}
+                        onChange={(e) => {
+                          const newRates = [...settings.roiRates];
+                          newRates[index] = parseFloat(e.target.value) || 0;
+                          setSettings((prev) => ({
+                            ...prev,
+                            roiRates: newRates,
+                          }));
+                        }}
+                        min="0"
+                        max="100"
+                        step="0.5"
+                        placeholder="0"
+                        style={{
+                          width: "70px",
+                          padding: "6px 8px",
+                          border: "1px solid #d1d5db",
+                          borderRadius: "4px",
+                          fontSize: "0.875rem",
+                          textAlign: "center",
+                        }}
+                      />
+                      <span style={{ fontSize: "0.75rem", color: "#6b7280" }}>
+                        %
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <div
+              style={{
+                marginTop: "12px",
+                padding: "8px 12px",
+                backgroundColor: "#f0f9ff",
+                border: "1px solid #bfdbfe",
+                borderRadius: "6px",
+                fontSize: "0.8rem",
+                color: "#1e40af",
+              }}
+            >
+              💡 <strong>Tip:</strong> ROI rates typically increase over time.
+              Default progression adds 2.5% per year when extending duration.
             </div>
           </div>
 
@@ -1976,8 +2055,7 @@ const EnhancedAmcCalculator = () => {
           >
             Please go back to the dashboard and upload your Excel file first.{" "}
             <br />
-            The AMC Calculator requires Excel data to perform
-            calculations.
+            The AMC Calculator requires Excel data to perform calculations.
           </p>
           <button
             onClick={() => window.history.back()}
@@ -2082,7 +2160,7 @@ const EnhancedAmcCalculator = () => {
                 <option value="">All ROI Groups</option>
                 {roiOptions.map((roi, index) => (
                   <option key={index} value={JSON.stringify(roi)}>
-                    Y1: {roi[0]}%, Y2: {roi[1]}%, Y3: {roi[2]}%, Y4: {roi[3]}%
+                    {roi.map((rate, i) => `Y${i + 1}: ${rate}%`).join(", ")}
                   </option>
                 ))}
               </select>
@@ -2858,7 +2936,7 @@ const EnhancedAmcCalculator = () => {
                   value ? new Date(value).toLocaleDateString() : "-",
                 uatDate: (value) =>
                   value ? new Date(value).toLocaleDateString() : "-",
-                // Dynamic formatter for quarter columns (format: "Quarter-Year")
+                
                 ...Object.fromEntries(
                   tableColumns
                     .filter(

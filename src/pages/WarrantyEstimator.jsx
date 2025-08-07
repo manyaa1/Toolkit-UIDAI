@@ -186,14 +186,6 @@ const spinKeyframes = `
       warrantyEnd.setFullYear(warrantyEnd.getFullYear() + years);
       warrantyEnd.setDate(warrantyEnd.getDate() - 1);
 
-      console.log(`🔍 Warranty Calculation Start:`, {
-        startDate: startDate.toISOString().split('T')[0],
-        warrantyEnd: warrantyEnd.toISOString().split('T')[0],
-        totalWarrantyAmount: totalWarrantyAmount.toFixed(2),
-        quarterlyAmount: quarterlyAmount.toFixed(2),
-        years
-      });
-
       let firstQuarterActualAmount = 0;
       let firstQuarterKey = null;
       let lastQuarterKey = null;
@@ -250,8 +242,6 @@ const spinKeyframes = `
       // Sort quarters chronologically
       quarterlyPayments.sort((a, b) => a.quarterStart - b.quarterStart);
 
-      console.log(`📅 Found ${quarterlyPayments.length} quarters for warranty period`);
-
       // Calculate amounts for each quarter
       quarterlyPayments.forEach((quarter, index) => {
         let proratedAmount;
@@ -261,27 +251,13 @@ const spinKeyframes = `
           proratedAmount = (quarter.overlapDays / quarter.totalDaysInQuarter) * quarterlyAmount;
           firstQuarterActualAmount = proratedAmount;
           firstQuarterKey = quarter.key;
-          
-          console.log(`📅 First Quarter ${quarter.key}:`, {
-            overlapDays: quarter.overlapDays,
-            totalDaysInQuarter: quarter.totalDaysInQuarter,
-            proratedAmount: proratedAmount.toFixed(2),
-            fullQuarterlyAmount: quarterlyAmount.toFixed(2)
-          });
+
         } else if (quarter.isLast) {
           // Last quarter: Pay ONLY the deficit from first quarter (quarterly_amount - first_quarter_amount)
           const firstQuarterDeficit = quarterlyAmount - firstQuarterActualAmount;
           proratedAmount = firstQuarterDeficit;
           lastQuarterKey = quarter.key;
           
-          console.log(`📅 Last Quarter ${quarter.key}:`, {
-            overlapDays: quarter.overlapDays,
-            totalDaysInQuarter: quarter.totalDaysInQuarter,
-            quarterlyAmount: quarterlyAmount.toFixed(2),
-            firstQuarterActualAmount: firstQuarterActualAmount.toFixed(2),
-            deficitAmount: firstQuarterDeficit.toFixed(2),
-            finalAmount: proratedAmount.toFixed(2)
-          });
         } else {
           // Middle quarters: Full quarterly amount if fully covered
           if (quarter.overlapDays === quarter.totalDaysInQuarter) {
@@ -290,13 +266,7 @@ const spinKeyframes = `
             // Partial middle quarter (rare case)
             proratedAmount = (quarter.overlapDays / quarter.totalDaysInQuarter) * quarterlyAmount;
           }
-          
-          console.log(`📅 Middle Quarter ${quarter.key}:`, {
-            overlapDays: quarter.overlapDays,
-            totalDaysInQuarter: quarter.totalDaysInQuarter,
-            amount: proratedAmount.toFixed(2),
-            isFull: quarter.overlapDays === quarter.totalDaysInQuarter
-          });
+        
         }
 
         const withoutGst = Math.round(proratedAmount * 100) / 100;
@@ -341,24 +311,7 @@ const spinKeyframes = `
       );
       const expectedTotal = totalWarrantyAmount;
       const difference = Math.abs(expectedTotal - calculatedTotal);
-      
-      console.log(`🎯 Warranty Total Verification:`, {
-        expected: expectedTotal.toFixed(2),
-        calculated: calculatedTotal.toFixed(2),
-        difference: difference.toFixed(2),
-        isCorrect: difference < 0.01, // Within 1 paisa tolerance
-        firstQuarterKey,
-        firstQuarterActualAmount: firstQuarterActualAmount.toFixed(2),
-        lastQuarterKey,
-        quarterCount: quarterlyPayments.length,
-        deficitInLastQuarter: (quarterlyAmount - firstQuarterActualAmount).toFixed(2)
-      });
-
-      // Warn if there's a significant difference
-      if (difference > 0.01) {
-        console.warn(`⚠️ Total mismatch detected! Difference: ₹${difference.toFixed(2)}`);
-      }
-
+ 
       return {
         schedule: Object.fromEntries(schedule),
         splitDetails: Object.fromEntries(splitDetails),
@@ -374,16 +327,13 @@ const spinKeyframes = `
     [getQuarterDates]
   );
 
-
-    // Process Excel data for warranty calculations
   const processExcelData = useCallback(() => {
-    // Check if we have Excel data and get the active sheet data
+    
     if (!excelData || Object.keys(excelData).length === 0) {
       alert("No Excel data available. Please upload an Excel file first.");
       return;
     }
 
-    // Get data from the active sheet or first available sheet
     const sheetName = activeSheet || Object.keys(excelData)[0];
     const sheetData = excelData[sheetName];
 
@@ -398,7 +348,7 @@ const spinKeyframes = `
 
     try {
       const processedProducts = sheetData.map((row, index) => {
-        // Handle various column name formats
+     
         const itemName =
           row["Item Name"] ||
           row["itemName"] ||
@@ -422,54 +372,36 @@ const spinKeyframes = `
           const isLakhs =
             originalStr.includes("lakh") || originalStr.includes("lac");
 
-          // Handle various formats: "14,53,10,862.00", "₹14,53,10,862", "2.5 Cr", etc.
           costStr = costStr
-            .replace(/[₹$,\s]/g, "") // Remove currency symbols, commas, spaces
-            .replace(/\.00$/, "") // Remove trailing .00
-            .replace(/[Cc][Rr].*$/, "") // Remove "Cr", "cr", "Crores" etc.
-            .replace(/[Ll]akh.*$/, "") // Remove "Lakh", "lakhs" etc.
+            .replace(/[₹$,\s]/g, "") 
+            .replace(/\.00$/, "") // 
+            .replace(/[Cc][Rr].*$/, "") 
+            .replace(/[Ll]akh.*$/, "") 
             .trim();
 
           let parsed = parseFloat(costStr || 0);
 
-          // Apply unit conversions
           if (isCrores) {
-            parsed = parsed * 10000000; // 1 crore = 1,00,00,000
-            console.log(
-              `💰 Converted ${costStr} Crores to ₹${parsed.toLocaleString()}`
-            );
+            parsed = parsed * 10000000; 
+            
           } else if (isLakhs) {
-            parsed = parsed * 100000; // 1 lakh = 1,00,000
-            console.log(
-              `💰 Converted ${costStr} Lakhs to ₹${parsed.toLocaleString()}`
-            );
-          }
-
-          // Log suspicious values for debugging
-          if (parsed > 0 && parsed < 1000) {
-            console.warn(
-              `⚠️ Small cost value detected for ${
-                row["Item Name"] || row["itemName"] || "Unknown"
-              }: ₹${parsed}. Original: ${
-                row["Cost"] || row["cost"] || row["Price"] || row["price"]
-              }`
-            );
+            parsed = parsed * 100000;
           }
 
           return parsed;
         })();
-        const quantity = parseInt(row["Quantity"] || row["quantity"] || 1);
-        
-        // FIXED: Use parseExcelDate function instead of new Date()
+        const quantity = parseInt(row["Quantity"] || row["quantity"] || row["Qty"] ||row["qty"] ||  1);
+     
         const uatDate = parseExcelDate(
-          row["UAT Date"] ||
+            row["UAT Date"] ||
+            row["UAT DATE"] ||
             row["uatDate"] ||
             row["Purchase Date"] ||
             row["purchaseDate"]
         );
         
         const warrantyStart = row["Warranty Start"]
-          ? parseExcelDate(row["Warranty Start"])
+          ? parseExcelDate(row["Warranty Start"] || row["WARRANTY START"] )
           : uatDate;
           
         const warrantyYears = parseInt(
@@ -481,8 +413,8 @@ const spinKeyframes = `
           itemName,
           cost,
           quantity,
-          uatDate,  // Already formatted as YYYY-MM-DD by parseExcelDate
-          warrantyStart,  // Already formatted as YYYY-MM-DD by parseExcelDate
+          uatDate,  
+          warrantyStart,  
           warrantyYears,
           location: location || "Default Location",
           source: "excel",
@@ -496,7 +428,6 @@ const spinKeyframes = `
         setIsCalculating(false);
       }, 1000);
     } catch (error) {
-      console.error("Error processing Excel data:", error);
       alert("Error processing Excel data. Please check the file format.");
       setIsCalculating(false);
     }
@@ -521,27 +452,21 @@ const spinKeyframes = `
       const isLakhs =
         originalStr.includes("lakh") || originalStr.includes("lac");
 
-      // Clean the string
+      
       costStr = costStr
-        .replace(/[₹$,\s]/g, "") // Remove currency symbols, commas, spaces
-        .replace(/\.00$/, "") // Remove trailing .00
-        .replace(/[Cc][Rr].*$/, "") // Remove "Cr", "cr", "Crores" etc.
-        .replace(/[Ll]akh.*$/, "") // Remove "Lakh", "lakhs" etc.
+        .replace(/[₹$,\s]/g, "") 
+        .replace(/\.00$/, "") 
+        .replace(/[Cc][Rr].*$/, "") 
+        .replace(/[Ll]akh.*$/, "") 
         .trim();
 
       let parsed = parseFloat(costStr || 0);
 
-      // Apply unit conversions
+      
       if (isCrores) {
-        parsed = parsed * 10000000; // 1 crore = 1,00,00,000
-        console.log(
-          `💰 Manual Entry: Converted ${costStr} Crores to ₹${parsed.toLocaleString()}`
-        );
+        parsed = parsed * 10000000; 
       } else if (isLakhs) {
-        parsed = parsed * 100000; // 1 lakh = 1,00,000
-        console.log(
-          `💰 Manual Entry: Converted ${costStr} Lakhs to ₹${parsed.toLocaleString()}`
-        );
+        parsed = parsed * 100000;
       }
 
       return parsed;
@@ -561,7 +486,6 @@ const spinKeyframes = `
 
     setWarrantyProducts((prev) => [...prev, newProduct]);
 
-    // Reset form
     setManualProduct({
       itemName: "",
       cost: "",
@@ -573,9 +497,8 @@ const spinKeyframes = `
     });
   }, [manualProduct, location]);
 
-  // Generate dynamic table columns for warranty schedule (similar to AMC calculator)
     const warrantyTableColumns = useMemo(() => {
-    // Base columns for warranty data
+   
     const baseColumns = [
       {
         key: "itemName",
@@ -613,42 +536,33 @@ const spinKeyframes = `
       },
     ];
 
-    // Generate quarter columns dynamically from calculated schedule
     const quarterColumns = [];
     const quarterSet = new Set();
 
-    // Extract unique quarters from ALL products
     if (calculatedSchedule && calculatedSchedule.length > 0) {
       calculatedSchedule.forEach((product) => {
         Object.keys(product).forEach((key) => {
-          // Check if key matches quarter pattern (e.g., "JFM 2024", "AMJ 2025")
           if (key.match(/^(JFM|AMJ|JAS|OND) \d{4}$/)) {
             quarterSet.add(key);
           }
         });
       });
     }
-
-    // FIXED: Use the same sorting logic as calculateQuarterlySchedule
     const quarterOrder = ["JFM", "AMJ", "JAS", "OND"];
     const sortedQuarters = Array.from(quarterSet).sort((a, b) => {
       const [qA, yearA] = a.split(" ");
       const [qB, yearB] = b.split(" ");
-      
-      // Parse years as integers for proper comparison
+   
       const yearNumA = parseInt(yearA);
       const yearNumB = parseInt(yearB);
-      
-      // First sort by year
+
       if (yearNumA !== yearNumB) {
         return yearNumA - yearNumB;
       }
-      
-      // Then sort by quarter within the same year
+   
       return quarterOrder.indexOf(qA) - quarterOrder.indexOf(qB);
     });
 
-    // Create column definitions for each quarter
     sortedQuarters.forEach((quarterKey) => {
       quarterColumns.push({
         key: quarterKey,
@@ -658,7 +572,6 @@ const spinKeyframes = `
       });
     });
 
-    // Add total column if there are warranty years columns
     const totalColumns = [];
     if (calculatedSchedule && calculatedSchedule.length > 0) {
       const firstRow = calculatedSchedule[0];
@@ -675,16 +588,9 @@ const spinKeyframes = `
         });
       }
     }
-
-    console.log("🔍 Table Columns Debug:", {
-      quarterColumns: quarterColumns.map(col => col.key),
-      sortedQuarters: sortedQuarters
-    });
-
     return [...baseColumns, ...quarterColumns, ...totalColumns];
   }, [calculatedSchedule]);
 
-  // Formatters for warranty data display
   const warrantyFormatters = useMemo(() => {
     const formatters = {
       cost: (value) => (value ? `₹${value.toLocaleString()}` : "₹0"),
@@ -694,7 +600,6 @@ const spinKeyframes = `
       location: (value) => value || "-",
     };
 
-    // Add formatters for quarter columns
     if (calculatedSchedule && calculatedSchedule.length > 0) {
       const firstRow = calculatedSchedule[0];
       if (firstRow) {
@@ -714,7 +619,6 @@ const spinKeyframes = `
     return formatters;
   }, [calculatedSchedule]);
 
-  // Summary stats for warranty data
   const warrantySummary = useMemo(() => {
     if (!calculatedSchedule || calculatedSchedule.length === 0) {
       return {
@@ -732,7 +636,6 @@ const spinKeyframes = `
       (row) => row.itemName !== "Grand Total"
     );
 
-    // Find the total column to get the grand total value
     let totalValue = 0;
     if (grandTotalRow) {
       const totalColumn = Object.keys(grandTotalRow).find(
@@ -749,20 +652,16 @@ const spinKeyframes = `
     };
   }, [calculatedSchedule]);
 
-    // Calculate quarterly schedule for all products
      const calculateQuarterlySchedule = useCallback(() => {
       if (warrantyProducts.length === 0) {
         alert("No warranty products to calculate. Please add products first.");
         return;
       }
-
       setIsCalculating(true);
-
       try {
         const quarterlyRows = [];
         const allQuarters = new Set();
-
-        // First pass: Calculate schedules and collect ALL quarters
+        
         warrantyProducts.forEach((product) => {
           const warrantyStart = new Date(product.warrantyStart);
           const totalCost = product.cost;
@@ -770,8 +669,8 @@ const spinKeyframes = `
           const { schedule, splitDetails } = calculateWarrantySchedule(
             warrantyStart,
             totalCost,
-            0.18, // 18% GST
-            0.15, // 15% warranty percentage
+            0.18, 
+            0.15, 
             product.warrantyYears
           );
 
@@ -799,36 +698,24 @@ const spinKeyframes = `
           const finalTotal = Math.round(totalAmount * 100) / 100;
           row[`Total (${product.warrantyYears} Years)`] = finalTotal;
           
-          console.log(`✅ Product ${product.itemName}: Total = ₹${finalTotal.toLocaleString()}`);
           quarterlyRows.push(row);
         });
 
-        // FIXED: Proper chronological sorting of quarters
         const quarterOrder = ["JFM", "AMJ", "JAS", "OND"];
         const sortedQuarters = Array.from(allQuarters).sort((a, b) => {
           const [qA, yearA] = a.split(" ");
           const [qB, yearB] = b.split(" ");
-          
-          // Parse years as integers for proper comparison
+   
           const yearNumA = parseInt(yearA);
           const yearNumB = parseInt(yearB);
-          
-          // First sort by year
+ 
           if (yearNumA !== yearNumB) {
             return yearNumA - yearNumB;
           }
-          
-          // Then sort by quarter within the same year
+
           return quarterOrder.indexOf(qA) - quarterOrder.indexOf(qB);
         });
 
-        console.log("🔍 Quarter Sorting Debug:", {
-          allQuarters: Array.from(allQuarters),
-          sortedQuarters: sortedQuarters,
-          quarterOrder: quarterOrder
-        });
-
-        // Add missing quarter columns (set to 0) for each product
         quarterlyRows.forEach((row) => {
           sortedQuarters.forEach((quarter) => {
             if (!(quarter in row)) {
@@ -837,7 +724,6 @@ const spinKeyframes = `
           });
         });
 
-        // Calculate grand totals
         const totals = {
           itemName: "Grand Total",
           uatDate: "",
@@ -848,7 +734,6 @@ const spinKeyframes = `
           source: "",
         };
 
-        // Sum each quarter column
         sortedQuarters.forEach((quarter) => {
           totals[quarter] = quarterlyRows.reduce(
             (sum, row) => sum + (row[quarter] || 0),
@@ -885,14 +770,6 @@ const spinKeyframes = `
           const mainTotalCol = `Total (${uniqueWarrantyPeriods[0]} Years)`;
           totals[mainTotalCol] = Math.round(grandTotal * 100) / 100;
         }
-
-        console.log(`🎯 Grand Total Calculation:`, {
-          grandTotal: grandTotal.toFixed(2),
-          productCount: quarterlyRows.length,
-          quarterCount: sortedQuarters.length,
-          firstQuarter: sortedQuarters[0],
-          lastQuarter: sortedQuarters[sortedQuarters.length - 1]
-        });
 
         const finalSchedule = [...quarterlyRows, totals];
         setCalculatedSchedule(finalSchedule);
@@ -963,16 +840,9 @@ const spinKeyframes = `
           if (yearNumA !== yearNumB) {
             return yearNumA - yearNumB;
           }
-          
+  
           // Then sort by quarter within the same year
           return quarterOrder.indexOf(qA) - quarterOrder.indexOf(qB);
-        });
-
-        console.log("🔍 Export Quarter Debug:", {
-          allQuarters: Array.from(quarterSet),
-          sortedQuarters: sortedQuarters,
-          firstQuarter: sortedQuarters[0],
-          lastQuarter: sortedQuarters[sortedQuarters.length - 1]
         });
 
         // Define the correct column order for export
@@ -1035,9 +905,6 @@ const spinKeyframes = `
         
         // Write file
         XLSX.writeFile(wb, fileName);
-
-        console.log(`✅ Exported warranty schedule to ${fileName} with chronological quarter ordering`);
-        console.log(`📅 Quarter order: ${sortedQuarters.join(' → ')}`);
       } catch (error) {
         console.error("Export error:", error);
         alert("Error exporting to Excel. Please try again.");
