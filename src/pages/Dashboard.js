@@ -100,7 +100,7 @@ import {
 // ================================
 // EXCEL UPLOAD SECTION COMPONENT (Redux Version)
 // ================================
-const ExcelUploadSection = () => {
+const ExcelUploadSection = ({ isDarkMode }) => {
   const dispatch = useDispatch();
 
   // Excel selectors
@@ -147,7 +147,6 @@ const ExcelUploadSection = () => {
         alert("Please upload a valid Excel file (.xlsx or .xls)");
         return;
       }
-
 
       try {
         // Dispatch the action and wait for it to complete
@@ -254,13 +253,19 @@ const ExcelUploadSection = () => {
   return (
     <div
       style={{
-        background: "rgba(255, 255, 255, 0.95)",
+        background: isDarkMode
+          ? "rgba(55, 65, 81, 0.95)"
+          : "rgba(255, 255, 255, 0.95)",
         backdropFilter: "blur(20px)",
         borderRadius: "20px",
         padding: "32px",
         marginBottom: "40px",
-        border: "1px solid rgba(255, 255, 255, 0.2)",
-        boxShadow: "0 20px 40px -12px rgba(0, 0, 0, 0.15)",
+        border: `1px solid ${
+          isDarkMode ? "rgba(75, 85, 99, 0.3)" : "rgba(255, 255, 255, 0.2)"
+        }`,
+        boxShadow: isDarkMode
+          ? "0 20px 40px -12px rgba(0, 0, 0, 0.3)"
+          : "0 20px 40px -12px rgba(0, 0, 0, 0.15)",
       }}
     >
       <div
@@ -276,7 +281,7 @@ const ExcelUploadSection = () => {
             style={{
               fontSize: "1.5rem",
               fontWeight: 700,
-              color: "#1e293b",
+              color: isDarkMode ? "#f1f5f9" : "#1e293b",
               marginBottom: "8px",
             }}
           >
@@ -284,7 +289,7 @@ const ExcelUploadSection = () => {
           </h3>
           <p
             style={{
-              color: "#64748b",
+              color: isDarkMode ? "#94a3b8" : "#64748b",
               fontSize: "0.95rem",
               margin: 0,
             }}
@@ -325,8 +330,22 @@ const ExcelUploadSection = () => {
         <div
           style={{
             padding: "16px",
-            backgroundColor: hasData ? "#f0fdf4" : "#f8fafc",
-            border: `1px solid ${hasData ? "#bbf7d0" : "#e2e8f0"}`,
+            backgroundColor: hasData
+              ? isDarkMode
+                ? "#064e3b"
+                : "#f0fdf4"
+              : isDarkMode
+              ? "#374151"
+              : "#f8fafc",
+            border: `1px solid ${
+              hasData
+                ? isDarkMode
+                  ? "#065f46"
+                  : "#bbf7d0"
+                : isDarkMode
+                ? "#4b5563"
+                : "#e2e8f0"
+            }`,
             borderRadius: "12px",
           }}
         >
@@ -338,12 +357,18 @@ const ExcelUploadSection = () => {
               fontSize: "0.9rem",
               fontWeight: 600,
               marginBottom: "4px",
-              color: "#1e293b",
+              color: isDarkMode ? "#f1f5f9" : "#1e293b",
             }}
           >
             Excel Files
           </h4>
-          <p style={{ fontSize: "0.8rem", color: "#64748b", margin: 0 }}>
+          <p
+            style={{
+              fontSize: "0.8rem",
+              color: isDarkMode ? "#94a3b8" : "#64748b",
+              margin: 0,
+            }}
+          >
             {hasData
               ? `${sheets.length} sheets, ${totalRows.toLocaleString()} rows`
               : "No files uploaded"}
@@ -354,8 +379,22 @@ const ExcelUploadSection = () => {
         <div
           style={{
             padding: "16px",
-            backgroundColor: hasAMCData ? "#eff6ff" : "#f8fafc",
-            border: `1px solid ${hasAMCData ? "#bfdbfe" : "#e2e8f0"}`,
+            backgroundColor: hasAMCData
+              ? isDarkMode
+                ? "#1e3a8a"
+                : "#eff6ff"
+              : isDarkMode
+              ? "#374151"
+              : "#f8fafc",
+            border: `1px solid ${
+              hasAMCData
+                ? isDarkMode
+                  ? "#1d4ed8"
+                  : "#bfdbfe"
+                : isDarkMode
+                ? "#4b5563"
+                : "#e2e8f0"
+            }`,
             borderRadius: "12px",
           }}
         >
@@ -367,12 +406,18 @@ const ExcelUploadSection = () => {
               fontSize: "0.9rem",
               fontWeight: 600,
               marginBottom: "4px",
-              color: "#1e293b",
+              color: isDarkMode ? "#f1f5f9" : "#1e293b",
             }}
           >
             AMC Calculations
           </h4>
-          <p style={{ fontSize: "0.8rem", color: "#64748b", margin: 0 }}>
+          <p
+            style={{
+              fontSize: "0.8rem",
+              color: isDarkMode ? "#94a3b8" : "#64748b",
+              margin: 0,
+            }}
+          >
             {hasAMCData
               ? `${totalAMCAssets} assets, ₹${totalAMCValue.toLocaleString()}`
               : "No calculations stored"}
@@ -383,8 +428,22 @@ const ExcelUploadSection = () => {
         <div
           style={{
             padding: "16px",
-            backgroundColor: hasWarrantyData ? "#fef3c7" : "#f8fafc",
-            border: `1px solid ${hasWarrantyData ? "#fcd34d" : "#e2e8f0"}`,
+            backgroundColor: hasWarrantyData
+              ? isDarkMode
+                ? "#92400e"
+                : "#fef3c7"
+              : isDarkMode
+              ? "#374151"
+              : "#f8fafc",
+            border: `1px solid ${
+              hasWarrantyData
+                ? isDarkMode
+                  ? "#d97706"
+                  : "#fcd34d"
+                : isDarkMode
+                ? "#4b5563"
+                : "#e2e8f0"
+            }`,
             borderRadius: "12px",
           }}
         >
@@ -396,12 +455,18 @@ const ExcelUploadSection = () => {
               fontSize: "0.9rem",
               fontWeight: 600,
               marginBottom: "4px",
-              color: "#1e293b",
+              color: isDarkMode ? "#f1f5f9" : "#1e293b",
             }}
           >
             Warranty Calculations
           </h4>
-          <p style={{ fontSize: "0.8rem", color: "#64748b", margin: 0 }}>
+          <p
+            style={{
+              fontSize: "0.8rem",
+              color: isDarkMode ? "#94a3b8" : "#64748b",
+              margin: 0,
+            }}
+          >
             {hasWarrantyData
               ? `${totalWarrantyAssets} assets, ₹${totalWarrantyValue.toLocaleString()}`
               : "No calculations stored"}
@@ -412,14 +477,20 @@ const ExcelUploadSection = () => {
       {/* Excel Upload Area */}
       <div
         style={{
-          border: `2px dashed ${dragActive ? "#3b82f6" : "#cbd5e1"}`,
+          border: `2px dashed ${dragActive ? "#3b82f6" : isDarkMode ? "#4b5563" : "#cbd5e1"}`,
           borderRadius: "12px",
           padding: "32px",
           textAlign: "center",
           backgroundColor: dragActive
-            ? "#f0f9ff"
+            ? isDarkMode
+              ? "rgba(59, 130, 246, 0.1)"
+              : "#f0f9ff"
             : hasData
-            ? "#f0fdf4"
+            ? isDarkMode
+              ? "rgba(5, 150, 105, 0.1)"
+              : "#f0fdf4"
+            : isDarkMode
+            ? "#374151"
             : "#f8fafc",
           transition: "all 0.3s ease",
           position: "relative",
@@ -435,7 +506,12 @@ const ExcelUploadSection = () => {
             <p style={{ color: "#3b82f6", fontWeight: 600 }}>
               Processing Excel file...
             </p>
-            <p style={{ fontSize: "0.8rem", color: "#64748b" }}>
+            <p
+              style={{
+                fontSize: "0.8rem",
+                color: isDarkMode ? "#94a3b8" : "#64748b",
+              }}
+            >
               Please wait while we process your file
             </p>
           </div>
@@ -449,7 +525,7 @@ const ExcelUploadSection = () => {
             </p>
             <p
               style={{
-                color: "#6b7280",
+                color: isDarkMode ? "#94a3b8" : "#6b7280",
                 fontSize: "0.9rem",
                 marginBottom: "12px",
               }}
@@ -467,10 +543,10 @@ const ExcelUploadSection = () => {
             >
               <div
                 style={{
-                  backgroundColor: "white",
+                  backgroundColor: isDarkMode ? "#4b5563" : "white",
                   padding: "12px 20px",
                   borderRadius: "8px",
-                  border: "1px solid #e2e8f0",
+                  border: `1px solid ${isDarkMode ? "#6b7280" : "#e2e8f0"}`,
                 }}
               >
                 <div
@@ -482,16 +558,21 @@ const ExcelUploadSection = () => {
                 >
                   {sheets.length}
                 </div>
-                <div style={{ fontSize: "0.8rem", color: "#64748b" }}>
+                <div
+                  style={{
+                    fontSize: "0.8rem",
+                    color: isDarkMode ? "#94a3b8" : "#64748b",
+                  }}
+                >
                   Sheets
                 </div>
               </div>
               <div
                 style={{
-                  backgroundColor: "white",
+                  backgroundColor: isDarkMode ? "#4b5563" : "white",
                   padding: "12px 20px",
                   borderRadius: "8px",
-                  border: "1px solid #e2e8f0",
+                  border: `1px solid ${isDarkMode ? "#6b7280" : "#e2e8f0"}`,
                 }}
               >
                 <div
@@ -503,7 +584,12 @@ const ExcelUploadSection = () => {
                 >
                   {totalRows.toLocaleString()}
                 </div>
-                <div style={{ fontSize: "0.8rem", color: "#64748b" }}>
+                <div
+                  style={{
+                    fontSize: "0.8rem",
+                    color: isDarkMode ? "#94a3b8" : "#64748b",
+                  }}
+                >
                   Total Rows
                 </div>
               </div>
@@ -534,14 +620,14 @@ const ExcelUploadSection = () => {
                 fontSize: "1.1rem",
                 fontWeight: 600,
                 marginBottom: "8px",
-                color: "#374151",
+                color: isDarkMode ? "#f1f5f9" : "#374151",
               }}
             >
               Upload Excel File
             </p>
             <p
               style={{
-                color: "#6b7280",
+                color: isDarkMode ? "#94a3b8" : "#6b7280",
                 marginBottom: "16px",
                 fontSize: "0.9rem",
               }}
@@ -584,10 +670,10 @@ const ExcelUploadSection = () => {
           style={{
             marginTop: "16px",
             padding: "12px",
-            backgroundColor: "#fef2f2",
-            border: "1px solid #fecaca",
+            backgroundColor: isDarkMode ? "#7f1d1d" : "#fef2f2",
+            border: `1px solid ${isDarkMode ? "#991b1b" : "#fecaca"}`,
             borderRadius: "8px",
-            color: "#dc2626",
+            color: isDarkMode ? "#fca5a5" : "#dc2626",
             fontSize: "0.875rem",
           }}
         >
@@ -601,8 +687,8 @@ const ExcelUploadSection = () => {
           style={{
             marginTop: "24px",
             padding: "16px",
-            backgroundColor: "#f0f9ff",
-            border: "1px solid #bfdbfe",
+            backgroundColor: isDarkMode ? "#1e3a8a" : "#f0f9ff",
+            border: `1px solid ${isDarkMode ? "#1d4ed8" : "#bfdbfe"}`,
             borderRadius: "12px",
           }}
         >
@@ -611,13 +697,17 @@ const ExcelUploadSection = () => {
               fontSize: "0.9rem",
               fontWeight: 600,
               marginBottom: "12px",
-              color: "#1e293b",
+              color: isDarkMode ? "#f1f5f9" : "#1e293b",
             }}
           >
             🔄 Data Flow Status
           </h4>
           <div
-            style={{ fontSize: "0.8rem", color: "#64748b", lineHeight: 1.6 }}
+            style={{
+              fontSize: "0.8rem",
+              color: isDarkMode ? "#94a3b8" : "#64748b",
+              lineHeight: 1.6,
+            }}
           >
             <p style={{ margin: "4px 0" }}>
               • <strong>Excel Files:</strong>{" "}
@@ -643,6 +733,7 @@ const ExcelUploadSection = () => {
     </div>
   );
 };
+
 // ================================
 // MAIN DASHBOARD COMPONENT (Redux Version)
 // ================================
@@ -675,15 +766,6 @@ function EnhancedUIDAIDashboard() {
   const hasWarrantyData = useSelector(selectHasWarrantyData);
   const totalWarrantyAssets = useSelector(selectTotalWarrantyAssets);
   const totalWarrantyValue = useSelector(selectTotalWarrantyValue);
-
-  const quickTips = [
-    "Use the search feature to quickly find specific tools and features",
-    "Export your calculations directly to Excel from any tool",
-    "Set up notifications for important payment deadlines",
-    "Use keyboard shortcuts: Ctrl+K for search, Ctrl+D for dashboard",
-    "AMC calculations are automatically saved and available in Payment Tracker",
-    "Upload Excel files once to use across all calculation tools",
-  ];
 
   useEffect(() => {
     const savedExcel = localStorage.getItem("excelData");
@@ -776,7 +858,6 @@ function EnhancedUIDAIDashboard() {
   );
 
   // Tool data for filtering - Enhanced with data availability indicators
-  
   const tools = [
     {
       id: "amc",
@@ -918,7 +999,7 @@ function EnhancedUIDAIDashboard() {
     fontFamily:
       '"Inter", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
     display: "flex",
-    flexDirection: isMobile ? "column" : "row",
+    flexDirection: "column",
     position: "relative",
     transition: "all 0.3s ease",
   };
@@ -943,30 +1024,28 @@ function EnhancedUIDAIDashboard() {
   };
 
   // ================================
-  // SIDEBAR STYLING
+  // NAVBAR STYLING 
   // ================================
 
-  const sidebarStyle = {
-    width: isMobile ? "100%" : "300px",
+  const navbarStyle = {
+    width: "100%",
     backgroundColor: isDarkMode
-      ? "rgba(255, 255, 255, 0.95)"
+      ? "rgba(55, 65, 81, 0.95)"
       : "rgba(255, 255, 255, 0.98)",
     backdropFilter: "blur(20px)",
-    borderRight: `1px solid ${
-      isDarkMode ? "rgba(203, 213, 225, 0.3)" : "rgba(203, 213, 225, 0.5)"
+    borderBottom: `1px solid ${
+      isDarkMode ? "rgba(75, 85, 99, 0.3)" : "rgba(203, 213, 225, 0.5)"
     }`,
-    color: "#1e293b",
-    padding: "32px 24px",
-    display: "flex",
-    flexDirection: "column",
-    justifyContent: "space-between",
+    color: isDarkMode ? "#f1f5f9" : "#1e293b",
+    padding: "16px 20px",
     position: "relative",
     zIndex: 10,
-    minHeight: isMobile ? "auto" : "100vh",
-    boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
+    boxShadow: isDarkMode
+      ? "0 4px 25px -12px rgba(0, 0, 0, 0.4)"
+      : "0 4px 25px -12px rgba(0, 0, 0, 0.25)",
   };
 
-  // Search Modal Styles
+  // Search Modal Styles (Updated for dark mode)
   const searchModalStyle = {
     position: "fixed",
     top: 0,
@@ -981,7 +1060,7 @@ function EnhancedUIDAIDashboard() {
   };
 
   const searchBoxStyle = {
-    backgroundColor: "white",
+    backgroundColor: isDarkMode ? "#374151" : "white",
     borderRadius: "16px",
     padding: "24px",
     width: "90%",
@@ -993,17 +1072,12 @@ function EnhancedUIDAIDashboard() {
     width: "100%",
     padding: "16px",
     fontSize: "1.1rem",
-    border: "2px solid #e2e8f0",
+    border: `2px solid ${isDarkMode ? "#4b5563" : "#e2e8f0"}`,
     borderRadius: "12px",
     outline: "none",
     marginBottom: "16px",
-  };
-
-  
-  const headerSectionStyle = {
-    borderBottom: "2px solid #e2e8f0",
-    paddingBottom: "24px",
-    marginBottom: "32px",
+    backgroundColor: isDarkMode ? "#1f2937" : "white",
+    color: isDarkMode ? "#f1f5f9" : "#1e293b",
   };
 
   const mainContentStyle = {
@@ -1015,21 +1089,30 @@ function EnhancedUIDAIDashboard() {
   };
 
   const toolCardStyle = (tool) => ({
-    background:
-      hoveredCard === tool.id
-        ? "linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 250, 252, 0.95) 100%)"
-        : "rgba(255, 255, 255, 0.95)",
+    background: isDarkMode
+      ? hoveredCard === tool.id
+        ? "linear-gradient(135deg, rgba(55, 65, 81, 0.98) 0%, rgba(75, 85, 99, 0.95) 100%)"
+        : "rgba(55, 65, 81, 0.95)"
+      : hoveredCard === tool.id
+      ? "linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 250, 252, 0.95) 100%)"
+      : "rgba(255, 255, 255, 0.95)",
     backdropFilter: "blur(20px)",
     borderRadius: "20px",
     padding: "32px",
     border: `1px solid ${
       hoveredCard === tool.id
-        ? "rgba(59, 130, 246, 0.3)"
+        ? "#3b82f6"
+        : isDarkMode
+        ? "rgba(75, 85, 99, 0.3)"
         : "rgba(255, 255, 255, 0.2)"
     }`,
     boxShadow:
       hoveredCard === tool.id
-        ? "0 25px 50px -12px rgba(59, 130, 246, 0.25)"
+        ? isDarkMode
+          ? "0 25px 50px -12px rgba(59, 130, 246, 0.4)"
+          : "0 25px 50px -12px rgba(59, 130, 246, 0.25)"
+        : isDarkMode
+        ? "0 20px 40px -12px rgba(0, 0, 0, 0.3)"
         : "0 20px 40px -12px rgba(0, 0, 0, 0.15)",
     transform: hoveredCard === tool.id ? "translateY(-8px)" : "translateY(0)",
     transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
@@ -1047,13 +1130,13 @@ function EnhancedUIDAIDashboard() {
   const toolTitleStyle = {
     fontSize: "1.5rem",
     fontWeight: 700,
-    color: "#1e293b",
+    color: isDarkMode ? "#f1f5f9" : "#1e293b",
     marginBottom: "12px",
     lineHeight: 1.2,
   };
 
   const toolDescriptionStyle = {
-    color: "#64748b",
+    color: isDarkMode ? "#94a3b8" : "#64748b",
     fontSize: "0.95rem",
     lineHeight: 1.6,
     marginBottom: "20px",
@@ -1062,8 +1145,8 @@ function EnhancedUIDAIDashboard() {
   const toolTagStyle = {
     display: "inline-block",
     padding: "6px 12px",
-    backgroundColor: "#f1f5f9",
-    color: "#475569",
+    backgroundColor: isDarkMode ? "#4b5563" : "#f1f5f9",
+    color: isDarkMode ? "#d1d5db" : "#475569",
     borderRadius: "20px",
     fontSize: "0.8rem",
     fontWeight: 600,
@@ -1078,17 +1161,43 @@ function EnhancedUIDAIDashboard() {
     borderRadius: "8px",
     fontSize: "0.8rem",
     fontWeight: 500,
-    backgroundColor: status === "ready" ? "#f0fdf4" : "#fef3c7",
-    color: status === "ready" ? "#059669" : "#d97706",
-    border: `1px solid ${status === "ready" ? "#bbf7d0" : "#fcd34d"}`,
+    backgroundColor:
+      status === "ready"
+        ? isDarkMode
+          ? "#064e3b"
+          : "#f0fdf4"
+        : isDarkMode
+        ? "#92400e"
+        : "#fef3c7",
+    color:
+      status === "ready"
+        ? isDarkMode
+          ? "#34d399"
+          : "#059669"
+        : isDarkMode
+        ? "#fbbf24"
+        : "#d97706",
+    border: `1px solid ${
+      status === "ready"
+        ? isDarkMode
+          ? "#065f46"
+          : "#bbf7d0"
+        : isDarkMode
+        ? "#d97706"
+        : "#fcd34d"
+    }`,
   });
 
   const categoryFilterStyle = (category, isActive) => ({
     padding: "8px 16px",
     borderRadius: "20px",
     border: "none",
-    backgroundColor: isActive ? "#3b82f6" : "rgba(255, 255, 255, 0.8)",
-    color: isActive ? "white" : "#64748b",
+    backgroundColor: isActive
+      ? "#3b82f6"
+      : isDarkMode
+      ? "rgba(55, 65, 81, 0.8)"
+      : "rgba(255, 255, 255, 0.8)",
+    color: isActive ? "white" : isDarkMode ? "#d1d5db" : "#64748b",
     fontSize: "0.875rem",
     fontWeight: 600,
     cursor: "pointer",
@@ -1118,118 +1227,157 @@ function EnhancedUIDAIDashboard() {
             style={searchInputStyle}
             autoFocus
           />
-          <div style={{ fontSize: "0.875rem", color: "#64748b" }}>
+          <div
+            style={{
+              fontSize: "0.875rem",
+              color: isDarkMode ? "#9ca3af" : "#64748b",
+            }}
+          >
             Press <kbd>Escape</kbd> to close
           </div>
         </div>
       </div>
 
-      {/* Sidebar */}
-      <div style={sidebarStyle}>
-        <div>
-          {/* Header Section */}
-          <div style={headerSectionStyle}>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                marginBottom: "16px",
-              }}
-            >
-            <h1 style={{ fontSize: "1.75rem", fontWeight: 800, margin: 0 }}>
-              <span style={{ color: "#FF9933" }}>SUVIDHA</span>{" "}
-              <span style={{ color: "#138808" }}>SETU</span>
-            </h1>
-
-
-              <div
-                style={{
-                  fontSize: "0.875rem",
-                  color: "#64748b",
-                  fontWeight: 600,
-                }}
-              >
-                {currentTime}
-              </div>
-            </div>
-
-            <p
-              style={{
-                color: "#64748b",
-                fontSize: "0.95rem",
-                margin: 0,
-                lineHeight: 1.5,
-              }}
-            >
-              Advanced financial calculation suite with intelligent automation
-              and comprehensive data management.
-            </p>
-          </div>
-   
-          {/* Controls */}
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: "12px",
-            }}
-          >
-            
-          </div>
-        </div>
-
-        {/* Footer */}
+      {/* Navbar - Fixed for mobile responsiveness */}
+      <div style={navbarStyle}>
         <div
           style={{
-            borderTop: "1px solid #e2e8f0",
-            paddingTop: "20px",
-            marginTop: "20px",
+            display: "flex",
+            flexDirection: isMobile ? "column" : "row",
+            alignItems: isMobile ? "center" : "center",
+            justifyContent: "space-between",
+            gap: isMobile ? "12px" : "16px",
+            width: "100%",
           }}
         >
+          {/* Left Section - Brand with tri-color */}
           <div
             style={{
               display: "flex",
-              justifyContent: "space-between",
+              flexDirection: isMobile ? "column" : "row",
               alignItems: "center",
-              marginBottom: "16px",
+              gap: isMobile ? "8px" : "24px",
             }}
           >
-            <span style={{ fontSize: "0.8rem", color: "#64748b" }}>Theme</span>
+            <div style={{ textAlign: isMobile ? "center" : "left" }}>
+              <h1 style={{ fontSize: isMobile ? "1.5rem" : "2rem", fontWeight: 800, margin: 0 }}>
+              <span
+                style={{
+                  background: "linear-gradient(45deg, #FF6B35, #FFA500)",
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                  backgroundClip: "text",
+                  color: "transparent",
+                }}
+              >
+                SUVIDHA{" "}
+              </span>
+              <span
+                style={{
+                  background: "linear-gradient(45deg, #28A745, #28A745)", // solid green
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                  backgroundClip: "text",
+                  color: "transparent",
+                }}
+              >
+                SETU
+              </span>
+            </h1>
+              {!isMobile && (
+                <p
+                  style={{
+                    color: isDarkMode ? "#94a3b8" : "#64748b",
+                    fontSize: "0.85rem",
+                    margin: 0,
+                    lineHeight: 1.4,
+                    maxWidth: "300px",
+                    marginTop: "4px",
+                  }}
+                >
+                  Advanced financial calculation suite with intelligent automation
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Right Section - Controls in responsive layout */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: isMobile ? "8px" : "12px",
+              flexWrap: "wrap",
+              justifyContent: isMobile ? "center" : "flex-end",
+            }}
+          >
+            {/* Current Time */}
+            <div
+              style={{
+                fontSize: "0.75rem",
+                color: isDarkMode ? "#94a3b8" : "#64748b",
+                fontWeight: 600,
+                padding: "6px 10px",
+                backgroundColor: isDarkMode
+                  ? "rgba(75, 85, 99, 0.8)"
+                  : "rgba(248, 250, 252, 0.8)",
+                borderRadius: "6px",
+                border: `1px solid ${
+                  isDarkMode ? "rgba(107, 114, 128, 0.3)" : "rgba(203, 213, 225, 0.3)"
+                }`,
+                whiteSpace: "nowrap",
+              }}
+            >
+              🕒 {currentTime}
+            </div>
+
+            {/* Theme Toggle */}
             <button
               onClick={handleToggleDarkMode}
               style={{
-                padding: "6px 12px",
+                padding: "6px 10px",
                 backgroundColor: isDarkMode ? "#374151" : "#f3f4f6",
                 color: isDarkMode ? "#d1d5db" : "#374151",
-                border: "none",
-                borderRadius: "8px",
-                fontSize: "0.8rem",
+                border: `1px solid ${
+                  isDarkMode ? "rgba(107, 114, 128, 0.3)" : "rgba(203, 213, 225, 0.3)"
+                }`,
+                borderRadius: "6px",
+                fontSize: "0.75rem",
                 cursor: "pointer",
                 transition: "all 0.2s ease",
+                fontWeight: 600,
+                whiteSpace: "nowrap",
               }}
             >
-              {isDarkMode ? "🌙 Dark" : "☀️ Light"}
+              {isDarkMode ? "🌙" : "☀️"}
             </button>
-          </div>
 
-          <div
-            style={{
-              fontSize: "0.75rem",
-              color: "#9ca3af",
-              textAlign: "center",
-            }}
-          >
-            Suvidha Setu v1.0
+            {/* Search Button */}
+            <button
+              onClick={handleToggleSearch}
+              style={{
+                padding: "6px 10px",
+                backgroundColor: "#3b82f6",
+                color: "white",
+                border: "none",
+                borderRadius: "6px",
+                fontSize: "0.75rem",
+                cursor: "pointer",
+                transition: "all 0.2s ease",
+                fontWeight: 600,
+                whiteSpace: "nowrap",
+              }}
+            >
+              🔍
+            </button>
           </div>
         </div>
       </div>
 
-      
       {/* Main Content */}
       <div style={mainContentStyle}>
         {/* Global Data Management Hub */}
-        <ExcelUploadSection />
+        <ExcelUploadSection isDarkMode={isDarkMode} />
 
         {/* Category Filters */}
         <div
@@ -1299,7 +1447,13 @@ function EnhancedUIDAIDashboard() {
                     height: "8px",
                     borderRadius: "50%",
                     backgroundColor:
-                      tool.dataStatus === "ready" ? "#10b981" : "#f59e0b",
+                      tool.dataStatus === "ready"
+                        ? isDarkMode
+                          ? "#34d399"
+                          : "#10b981"
+                        : isDarkMode
+                        ? "#fbbf24"
+                        : "#f59e0b",
                   }}
                 ></div>
                 {tool.statusText}
@@ -1314,8 +1468,9 @@ function EnhancedUIDAIDashboard() {
                     left: 0,
                     right: 0,
                     bottom: 0,
-                    background:
-                      "linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(139, 92, 246, 0.05) 100%)",
+                    background: isDarkMode
+                      ? "linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(139, 92, 246, 0.05) 100%)"
+                      : "linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(139, 92, 246, 0.05) 100%)",
                     borderRadius: "20px",
                     pointerEvents: "none",
                   }}
@@ -1329,19 +1484,25 @@ function EnhancedUIDAIDashboard() {
         {recentActivity.length > 0 && (
           <div
             style={{
-              background: "rgba(255, 255, 255, 0.95)",
+              background: isDarkMode
+                ? "rgba(55, 65, 81, 0.95)"
+                : "rgba(255, 255, 255, 0.95)",
               backdropFilter: "blur(20px)",
               borderRadius: "20px",
               padding: "32px",
-              border: "1px solid rgba(255, 255, 255, 0.2)",
-              boxShadow: "0 20px 40px -12px rgba(0, 0, 0, 0.15)",
+              border: `1px solid ${
+                isDarkMode ? "rgba(75, 85, 99, 0.3)" : "rgba(255, 255, 255, 0.2)"
+              }`,
+              boxShadow: isDarkMode
+                ? "0 20px 40px -12px rgba(0, 0, 0, 0.3)"
+                : "0 20px 40px -12px rgba(0, 0, 0, 0.15)",
             }}
           >
             <h3
               style={{
                 fontSize: "1.5rem",
                 fontWeight: 700,
-                color: "#1e293b",
+                color: isDarkMode ? "#f1f5f9" : "#1e293b",
                 marginBottom: "24px",
               }}
             >
@@ -1356,7 +1517,7 @@ function EnhancedUIDAIDashboard() {
                     alignItems: "center",
                     gap: "16px",
                     padding: "16px",
-                    backgroundColor: "#f8fafc",
+                    backgroundColor: isDarkMode ? "#4b5563" : "#f8fafc",
                     borderRadius: "12px",
                     marginBottom: "12px",
                   }}
@@ -1367,7 +1528,7 @@ function EnhancedUIDAIDashboard() {
                       style={{
                         fontSize: "0.9rem",
                         fontWeight: 600,
-                        color: "#374151",
+                        color: isDarkMode ? "#f3f4f6" : "#374151",
                         marginBottom: "4px",
                       }}
                     >
@@ -1376,7 +1537,7 @@ function EnhancedUIDAIDashboard() {
                     <div
                       style={{
                         fontSize: "0.8rem",
-                        color: "#64748b",
+                        color: isDarkMode ? "#94a3b8" : "#64748b",
                       }}
                     >
                       {activity.timestamp}
@@ -1387,6 +1548,27 @@ function EnhancedUIDAIDashboard() {
             </div>
           </div>
         )}
+
+        {/* Footer */}
+        <div
+          style={{
+            textAlign: "center",
+            marginTop: "40px",
+            padding: "20px",
+            borderTop: `1px solid ${
+              isDarkMode ? "rgba(75, 85, 99, 0.3)" : "rgba(203, 213, 225, 0.3)"
+            }`,
+          }}
+        >
+          <div
+            style={{
+              fontSize: "0.75rem",
+              color: isDarkMode ? "#6b7280" : "#9ca3af",
+            }}
+          >
+            Suvidha Setu v1.0 - Advanced Financial Calculation Suite
+          </div>
+        </div>
       </div>
     </div>
   );

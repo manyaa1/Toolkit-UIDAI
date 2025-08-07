@@ -33,7 +33,6 @@ import {
   selectActiveSheet,
 } from "../store/selectors/excelSelectors";
 
-// Add CSS animation for spinner
 const spinKeyframes = `
   @keyframes spin {
     0% { transform: rotate(0deg); }
@@ -42,16 +41,13 @@ const spinKeyframes = `
 `;
   const parseExcelDate = (dateValue) => {
     if (!dateValue) return new Date().toISOString().split("T")[0];
-    
-    
+  
     const dateStr = String(dateValue).trim();
-    
     
     if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
       return dateStr;
     }
-    
-    
+  
     if (!isNaN(dateStr) && dateStr.length <= 6) {
       const serialNumber = parseInt(dateStr);
       if (serialNumber > 0 && serialNumber < 100000) {
@@ -67,8 +63,7 @@ const spinKeyframes = `
         return resultDate.toISOString().split("T")[0];
       }
     }
-    
-    // Handle DD-MMM-YY format (like "18-Oct-21")
+  
     const ddMmmYyMatch = dateStr.match(/^(\d{1,2})-([A-Za-z]{3})-(\d{2})$/);
     if (ddMmmYyMatch) {
       const [, day, monthStr, year] = ddMmmYyMatch;
@@ -80,39 +75,33 @@ const spinKeyframes = `
       const monthIndex = monthMap[monthStr.toLowerCase()];
       if (monthIndex !== undefined) {
         const fullYear = 2000 + parseInt(year);
-        // Create date in UTC to avoid timezone issues
         const date = new Date(Date.UTC(fullYear, monthIndex, parseInt(day)));
         const formattedDate = date.toISOString().split("T")[0];
-        console.log(`📅 Warranty: Parsed ${dateStr} -> ${formattedDate}`);
         return formattedDate;
       }
     }
     
-    // Handle text dates like "Oct 18, 2021", etc. - fallback
     try {
       const parsedDate = new Date(dateStr);
       if (!isNaN(parsedDate.getTime())) {
         const formattedDate = parsedDate.toISOString().split("T")[0];
-        console.log(`📅 Warranty: Fallback parsed ${dateStr} -> ${formattedDate}`);
         return formattedDate;
       }
     } catch (error) {
       console.warn(`⚠️ Warranty: Failed to parse date: ${dateStr}`);
     }
-    
-    // Default fallback
+
     const today = new Date().toISOString().split("T")[0];
-    console.warn(`⚠️ Warranty: Using today's date as fallback for: ${dateStr} -> ${today}`);
     return today;
   };
-  //ject styles
-if (typeof document !== "undefined") {
-  const style = document.createElement("style");
-  style.textContent = spinKeyframes;
-  document.head.appendChild(style);
-}
+  
+  if (typeof document !== "undefined") {
+    const style = document.createElement("style");
+    style.textContent = spinKeyframes;
+    document.head.appendChild(style);
+  }
 
-const WarrantyEstimator = () => {
+ const WarrantyEstimator = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
@@ -122,16 +111,6 @@ const WarrantyEstimator = () => {
   const hasExcelData = useSelector(selectHasData);
   const activeSheet = useSelector(selectActiveSheet);
 
-  // Debug logging for Excel data detection
-  useEffect(() => {
-    console.log("🔍 WarrantyEstimator Excel Data Debug:", {
-      hasExcelData,
-      fileName,
-      excelDataKeys: Object.keys(excelData || {}),
-      activeSheet,
-      excelDataStructure: excelData,
-    });
-  }, [hasExcelData, fileName, excelData, activeSheet]);
 
   // Local state
   const [isCalculating, setIsCalculating] = useState(false);
@@ -1275,89 +1254,86 @@ const WarrantyEstimator = () => {
       </div>
 
       {/* Configuration */}
-      <div style={cardStyle}>
-        <h2
-          style={{
-            fontSize: "1.5rem",
-            fontWeight: 700,
-            marginBottom: "16px",
-            color: "#374151",
-            display: "flex",
-            alignItems: "center",
-            gap: "8px",
-          }}
-        >
-          <Settings size={24} />
-          Configuration
-        </h2>
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
-            gap: "16px",
-          }}
-        >
-          <div>
-            <label style={styles.label}>
-              <MapPin
-                size={16}
-                style={{ display: "inline", marginRight: "8px" }}
-              />
-              Location
-            </label>
-            <input
-              type="text"
-              value={location}
-              onChange={(e) => setLocation(e.target.value)}
-              placeholder="Enter location"
-              style={styles.input}
-            />
-          </div>
-          <div>
-            <label style={styles.label}>
-              <DollarSign
-                size={16}
-                style={{ display: "inline", marginRight: "8px" }}
-              />
-              Display Amounts
-            </label>
-            <div style={{ display: "flex", gap: "16px", alignItems: "center" }}>
-              <label
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "6px",
-                  color: "#374151",
-                }}
-              >
+        <div style={cardStyle}>
+          <h2
+            style={{
+              fontSize: "1.5rem",
+              fontWeight: 700,
+              marginBottom: "16px",
+              color: "#374151",
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+            }}
+          >
+            <Settings size={24} />
+            Configuration
+          </h2>
+
+           <div
+              style={{
+                display: "flex",
+                flexWrap: "wrap",
+                gap: "32px",
+                alignItems: "center", 
+              }}
+            >
+              {/* Location Input */}
+              <div style={{ flex: "1 1 300px" }}>
+                <label style={styles.label}>
+                  <MapPin size={16} style={{ display: "inline", marginRight: "8px" }} />
+                  Location
+                </label>
                 <input
-                  type="radio"
-                  checked={showGST}
-                  onChange={() => setShowGST(true)}
-                  style={{ accentColor: "#3b82f6" }}
+                  type="text"
+                  value={location}
+                  onChange={(e) => setLocation(e.target.value)}
+                  placeholder="Enter location"
+                  style={{
+                    ...styles.input,
+                    marginTop: "8px",
+                  }}
                 />
-                With GST (18%)
-              </label>
-              <label
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "6px",
-                  color: "#374151",
-                }}
-              >
-                <input
-                  type="radio"
-                  checked={!showGST}
-                  onChange={() => setShowGST(false)}
-                  style={{ accentColor: "#3b82f6" }}
-                />
-                Without GST
-              </label>
+              </div>
+
+              {/* Radio Buttons */}
+              <div style={{ flex: "1 1 300px" }}>
+                <label style={styles.label}>
+                  <DollarSign size={16} style={{ display: "inline", marginRight: "8px" }} />
+                  Display Amounts
+                </label>
+                <div
+                  style={{
+                    display: "flex",
+                    gap: "16px",
+                    alignItems: "center",
+                    marginTop: "8px",
+                  }}
+                >
+                  <label style={{ display: "flex", alignItems: "center", gap: "6px", color: "#374151" }}>
+                    <input
+                      type="radio"
+                      checked={showGST}
+                      onChange={() => setShowGST(true)}
+                      style={{ accentColor: "#3b82f6" }}
+                    />
+                    With GST (18%)
+                  </label>
+                  <label style={{ display: "flex", alignItems: "center", gap: "6px", color: "#374151" }}>
+                    <input
+                      type="radio"
+                      checked={!showGST}
+                      onChange={() => setShowGST(false)}
+                      style={{ accentColor: "#3b82f6" }}
+                    />
+                    Without GST
+                  </label>
+                </div>
+              </div>
             </div>
-          </div>
+
         </div>
-      </div>
+
 
       {/* Tabs */}
       <div style={cardStyle}>
@@ -1376,7 +1352,7 @@ const WarrantyEstimator = () => {
             style={styles.tab(activeTab === "upload")}
           >
             <Upload size={16} style={{ marginRight: "6px" }} />
-            Excel Upload
+            Process Excel 
           </button>
           <button
             onClick={() => setActiveTab("manual")}
