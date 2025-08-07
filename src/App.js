@@ -26,7 +26,7 @@ function App() {
               element={<EnhancedAmcCalculator />}
             />
             <Route
-              path="/warranty-calculator"
+              path="/warranty-estimator"
               element={<WarrantyEstimator />}
             />
             <Route

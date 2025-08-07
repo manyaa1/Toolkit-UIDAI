@@ -845,11 +845,10 @@ function EnhancedUIDAIDashboard() {
   // Navigation handler for tool cards
   const handleNavigation = useCallback(
     (path, toolName) => {
-      console.log(`🚀 Attempting to navigate to ${toolName}: ${path}`);
-      console.log(`🚀 Current location:`, window.location.href);
+    
       try {
         navigate(path);
-        console.log(`✅ Navigation call successful for ${toolName}`);
+        
       } catch (error) {
         console.error(`❌ Navigation failed for ${toolName}:`, error);
       }
@@ -880,7 +879,7 @@ function EnhancedUIDAIDashboard() {
       description:
         "Your digital assistant for warranty tracking — smart calculator, export-ready, and easy to use.",
       icon: "🛡️",
-      path: "/warranty-calculator",
+      path: "/warranty-estimator",
       tag: "Risk Management",
       dataStatus: hasExcelData ? "ready" : "needs-data",
       statusText: hasExcelData
@@ -1274,7 +1273,7 @@ function EnhancedUIDAIDashboard() {
               </span>
               <span
                 style={{
-                  background: "linear-gradient(45deg, #28A745, #28A745)", // solid green
+                  background: "linear-gradient(45deg, #28A745, #28A745)", 
                   WebkitBackgroundClip: "text",
                   WebkitTextFillColor: "transparent",
                   backgroundClip: "text",
