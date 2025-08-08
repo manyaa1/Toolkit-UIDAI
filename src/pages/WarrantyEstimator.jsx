@@ -145,7 +145,7 @@ const spinKeyframes = `
     return () => clearInterval(interval);
   }, []);
 
-  // Quarter date logic (matching Python implementation)
+  // Quarter date logic 
   const getQuarterDates = useCallback((year) => {
     return {
       OND: [new Date(year, 9, 5), new Date(year + 1, 0, 4)], // Oct 5 - Jan 4
@@ -807,7 +807,7 @@ const spinKeyframes = `
           });
         });
 
-        // Sort quarters chronologically (same logic as UI)
+        // Sort quarters chronologically 
         const quarterOrder = ["JFM", "AMJ", "JAS", "OND"];
         const sortedQuarters = Array.from(quarterSet).sort((a, b) => {
           const [qA, yearA] = a.split(" ");
@@ -895,7 +895,7 @@ const spinKeyframes = `
     setWarrantyProducts((prev) => prev.filter((p) => p.id !== productId));
   }, []);
 
-  // Styling matching AMC Calculator theme
+  // Styling 
   const containerStyle = {
     minHeight: "100vh",
     background:

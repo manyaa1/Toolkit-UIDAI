@@ -290,7 +290,7 @@ const EnhancedAmcCalculator = () => {
     });
   }, [settings.amcYears]);
 
-  // Process Excel data when available (MUST be defined before useAMCCache)
+  // Process Excel data when available 
   const parseExcelDate = (dateValue) => {
     if (!dateValue) return new Date().toISOString().split("T")[0];
 
@@ -437,7 +437,7 @@ const excelEpoch = new Date(1900, 0, 1);
             return parsed;
           })(),
           location: row.Location || row.location || "Unknown",
-          // ENHANCED DATE PARSING 
+          //  DATE PARSING 
           uatDate: parseExcelDate(
             row["UAT Date"] ||row["UAT DATE"] ||
               row.uatDate ||
@@ -504,7 +504,7 @@ const excelEpoch = new Date(1900, 0, 1);
   const currentSummary =
     hasCachedResult && useCache ? cachedResult.metadata : summary;
 
-  // Transform data to match Excel AMC Schedule format (flatten quarters into columns)
+  // Transform data to match Excel AMC Schedule format 
   const currentResults = useMemo(() => {
     if (!rawResults || rawResults.length === 0) return [];
 
@@ -914,7 +914,6 @@ const excelEpoch = new Date(1900, 0, 1);
           }.xlsx`
         );
       } catch (error) {
-        console.error("Export error:", error);
         alert("Failed to export Excel file. Please try again.");
       }
     },

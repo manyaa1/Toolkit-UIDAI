@@ -69,13 +69,11 @@ import {
   selectFilteredTools,
 } from "../store/selectors/dashboardSelectors";
 
-// EXCEL UPLOAD SECTION COMPONENT (Redux Version)
+// ====================EXCEL UPLOAD SECTION COMPONENT (Redux Version)===============
 
 const ExcelUploadSection = () => {
   const dispatch = useDispatch();
 
-  // Excel selectors
-  //const excelData = useSelector(selectExcelData);
   const fileName = useSelector(selectFileName);
   const sheets = useSelector(selectSheets);
   const isLoading = useSelector(selectIsLoading);
@@ -114,7 +112,6 @@ const ExcelUploadSection = () => {
       );
 
       if (!isValidType) {
-        console.error("❌ Invalid file type:", file.type);
         alert("Please upload a valid Excel file (.xlsx or .xls)");
         return;
       }
@@ -626,7 +623,7 @@ const ExcelUploadSection = () => {
   );
 };
 
-// MAIN DASHBOARD COMPONENT (Redux Version)
+// ==============MAIN DASHBOARD COMPONENT (Using Redux )====================
 
 function EnhancedUIDAIDashboard() {
   const dispatch = useDispatch();
@@ -829,7 +826,7 @@ function EnhancedUIDAIDashboard() {
     [dispatch]
   );
 
-  // COMPREHENSIVE STYLING SYSTEM
+  // ==============COMPREHENSIVE STYLING SYSTEM==============
  
 
   const containerStyle = {
@@ -857,12 +854,10 @@ function EnhancedUIDAIDashboard() {
     pointerEvents: "none",
   };
 
-  // ================================
-  // NAVBAR STYLING 
-  // ================================
+   /* ============== NAVBAR STYLING ============= */
 
   const navbarStyle = {
-    width: "100%",
+    width: "97%",
     backgroundColor: "rgba(255, 255, 255, 0.98)",
     backdropFilter: "blur(20px)",
     borderBottom: "1px solid rgba(203, 213, 225, 0.5)",
@@ -995,10 +990,8 @@ function EnhancedUIDAIDashboard() {
     backdropFilter: "blur(10px)",
   });
 
-  // ================================
-  // RENDER COMPONENT
-  // ================================
-
+  // =================RENDER COMPONENT===================
+ 
   return (
     <div style={containerStyle}>
       <div style={backgroundOverlayStyle}></div>
