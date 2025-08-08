@@ -34,7 +34,6 @@ import {
   setSelectedCategory,
   toggleNotifications,
   updateStats,
-  toggleDarkMode,
   toggleQuickTips,
   setCurrentTip,
   nextTip,
@@ -89,7 +88,6 @@ import {
   selectNotifications,
   selectShowNotifications,
   selectStats,
-  selectIsDarkMode,
   selectShowQuickTips,
   selectCurrentTip,
   selectShowSearch,
@@ -100,7 +98,7 @@ import {
 // ================================
 // EXCEL UPLOAD SECTION COMPONENT (Redux Version)
 // ================================
-const ExcelUploadSection = ({ isDarkMode }) => {
+const ExcelUploadSection = () => {
   const dispatch = useDispatch();
 
   // Excel selectors
@@ -151,13 +149,10 @@ const ExcelUploadSection = ({ isDarkMode }) => {
       try {
         // Dispatch the action and wait for it to complete
         const result = await dispatch(processExcelFile(file));
-        console.log("📊 processExcelFile result:", result);
-
+       
         // Check if the action was successful
         if (result.type && result.type.endsWith("/fulfilled")) {
-          console.log("🎉 FILE UPLOADED SUCCESSFULLY! 🎉");
-          console.log("📈 Excel data processed and stored in Redux store");
-
+         
           // Show success notification
           alert("✅ File uploaded successfully!");
         } else if (result.type && result.type.endsWith("/rejected")) {
@@ -172,29 +167,13 @@ const ExcelUploadSection = ({ isDarkMode }) => {
 
   // Add useEffect to monitor state changes
   useEffect(() => {
-    console.log("📊 Excel state updated:", {
-      hasData,
-      fileName,
-      sheetsCount: sheets?.length || 0,
-      totalRows,
-      isLoading,
-      error,
-    });
 
-    if (hasData && fileName) {
-      console.log("🎯 Excel data is now available in Redux store!");
-      console.log(
-        "📋 Available sheets:",
-        sheets.map((sheet) => sheet.name)
-      );
-    }
   }, [hasData, fileName, sheets, totalRows, isLoading, error]);
 
   const handleDrag = useCallback((e) => {
     e.preventDefault();
     e.stopPropagation();
-    console.log("📁 Drag event:", e.type);
-
+   
     if (e.type === "dragenter" || e.type === "dragover") {
       setDragActive(true);
     } else if (e.type === "dragleave") {
@@ -208,11 +187,8 @@ const ExcelUploadSection = ({ isDarkMode }) => {
       e.stopPropagation();
       setDragActive(false);
 
-      console.log("📁 File dropped!");
-      console.log("📁 Files in drop:", e.dataTransfer.files.length);
-
       if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-        console.log("📁 Processing dropped file...");
+       
         handleFile(e.dataTransfer.files[0]);
       } else {
         console.error("❌ No files found in drop event");
@@ -223,11 +199,10 @@ const ExcelUploadSection = ({ isDarkMode }) => {
 
   const handleFileInput = useCallback(
     (e) => {
-      console.log("📁 File input changed");
-      console.log("📁 Files selected:", e.target.files?.length || 0);
+      
 
       if (e.target.files && e.target.files[0]) {
-        console.log("📁 Processing selected file...");
+       
         handleFile(e.target.files[0]);
       } else {
         console.error("❌ No files found in file input");
@@ -242,30 +217,24 @@ const ExcelUploadSection = ({ isDarkMode }) => {
         "Are you sure you want to clear all data? This will remove Excel files, AMC calculations, and Warranty calculations."
       )
     ) {
-      console.log("🗑️ Clearing all data...");
+      
       dispatch(clearExcelData());
       dispatch(clearData());
       dispatch(clearWarrantyData());
-      console.log("✅ All data cleared");
+      
     }
   }, [dispatch]);
 
   return (
     <div
       style={{
-        background: isDarkMode
-          ? "rgba(55, 65, 81, 0.95)"
-          : "rgba(255, 255, 255, 0.95)",
+        background: "rgba(255, 255, 255, 0.95)",
         backdropFilter: "blur(20px)",
         borderRadius: "20px",
         padding: "32px",
         marginBottom: "40px",
-        border: `1px solid ${
-          isDarkMode ? "rgba(75, 85, 99, 0.3)" : "rgba(255, 255, 255, 0.2)"
-        }`,
-        boxShadow: isDarkMode
-          ? "0 20px 40px -12px rgba(0, 0, 0, 0.3)"
-          : "0 20px 40px -12px rgba(0, 0, 0, 0.15)",
+        border: "1px solid rgba(255, 255, 255, 0.2)",
+        boxShadow: "0 20px 40px -12px rgba(0, 0, 0, 0.15)",
       }}
     >
       <div
@@ -281,7 +250,7 @@ const ExcelUploadSection = ({ isDarkMode }) => {
             style={{
               fontSize: "1.5rem",
               fontWeight: 700,
-              color: isDarkMode ? "#f1f5f9" : "#1e293b",
+              color: "#1e293b",
               marginBottom: "8px",
             }}
           >
@@ -289,7 +258,7 @@ const ExcelUploadSection = ({ isDarkMode }) => {
           </h3>
           <p
             style={{
-              color: isDarkMode ? "#94a3b8" : "#64748b",
+              color: "#64748b",
               fontSize: "0.95rem",
               margin: 0,
             }}
@@ -330,22 +299,8 @@ const ExcelUploadSection = ({ isDarkMode }) => {
         <div
           style={{
             padding: "16px",
-            backgroundColor: hasData
-              ? isDarkMode
-                ? "#064e3b"
-                : "#f0fdf4"
-              : isDarkMode
-              ? "#374151"
-              : "#f8fafc",
-            border: `1px solid ${
-              hasData
-                ? isDarkMode
-                  ? "#065f46"
-                  : "#bbf7d0"
-                : isDarkMode
-                ? "#4b5563"
-                : "#e2e8f0"
-            }`,
+            backgroundColor: hasData ? "#f0fdf4" : "#f8fafc",
+            border: `1px solid ${hasData ? "#bbf7d0" : "#e2e8f0"}`,
             borderRadius: "12px",
           }}
         >
@@ -357,7 +312,7 @@ const ExcelUploadSection = ({ isDarkMode }) => {
               fontSize: "0.9rem",
               fontWeight: 600,
               marginBottom: "4px",
-              color: isDarkMode ? "#f1f5f9" : "#1e293b",
+              color: "#1e293b",
             }}
           >
             Excel Files
@@ -365,7 +320,7 @@ const ExcelUploadSection = ({ isDarkMode }) => {
           <p
             style={{
               fontSize: "0.8rem",
-              color: isDarkMode ? "#94a3b8" : "#64748b",
+              color: "#64748b",
               margin: 0,
             }}
           >
@@ -379,22 +334,8 @@ const ExcelUploadSection = ({ isDarkMode }) => {
         <div
           style={{
             padding: "16px",
-            backgroundColor: hasAMCData
-              ? isDarkMode
-                ? "#1e3a8a"
-                : "#eff6ff"
-              : isDarkMode
-              ? "#374151"
-              : "#f8fafc",
-            border: `1px solid ${
-              hasAMCData
-                ? isDarkMode
-                  ? "#1d4ed8"
-                  : "#bfdbfe"
-                : isDarkMode
-                ? "#4b5563"
-                : "#e2e8f0"
-            }`,
+            backgroundColor: hasAMCData ? "#eff6ff" : "#f8fafc",
+            border: `1px solid ${hasAMCData ? "#bfdbfe" : "#e2e8f0"}`,
             borderRadius: "12px",
           }}
         >
@@ -406,7 +347,7 @@ const ExcelUploadSection = ({ isDarkMode }) => {
               fontSize: "0.9rem",
               fontWeight: 600,
               marginBottom: "4px",
-              color: isDarkMode ? "#f1f5f9" : "#1e293b",
+              color: "#1e293b",
             }}
           >
             AMC Calculations
@@ -414,7 +355,7 @@ const ExcelUploadSection = ({ isDarkMode }) => {
           <p
             style={{
               fontSize: "0.8rem",
-              color: isDarkMode ? "#94a3b8" : "#64748b",
+              color: "#64748b",
               margin: 0,
             }}
           >
@@ -428,22 +369,8 @@ const ExcelUploadSection = ({ isDarkMode }) => {
         <div
           style={{
             padding: "16px",
-            backgroundColor: hasWarrantyData
-              ? isDarkMode
-                ? "#92400e"
-                : "#fef3c7"
-              : isDarkMode
-              ? "#374151"
-              : "#f8fafc",
-            border: `1px solid ${
-              hasWarrantyData
-                ? isDarkMode
-                  ? "#d97706"
-                  : "#fcd34d"
-                : isDarkMode
-                ? "#4b5563"
-                : "#e2e8f0"
-            }`,
+            backgroundColor: hasWarrantyData ? "#fef3c7" : "#f8fafc",
+            border: `1px solid ${hasWarrantyData ? "#fcd34d" : "#e2e8f0"}`,
             borderRadius: "12px",
           }}
         >
@@ -455,7 +382,7 @@ const ExcelUploadSection = ({ isDarkMode }) => {
               fontSize: "0.9rem",
               fontWeight: 600,
               marginBottom: "4px",
-              color: isDarkMode ? "#f1f5f9" : "#1e293b",
+              color: "#1e293b",
             }}
           >
             Warranty Calculations
@@ -463,7 +390,7 @@ const ExcelUploadSection = ({ isDarkMode }) => {
           <p
             style={{
               fontSize: "0.8rem",
-              color: isDarkMode ? "#94a3b8" : "#64748b",
+              color: "#64748b",
               margin: 0,
             }}
           >
@@ -477,20 +404,14 @@ const ExcelUploadSection = ({ isDarkMode }) => {
       {/* Excel Upload Area */}
       <div
         style={{
-          border: `2px dashed ${dragActive ? "#3b82f6" : isDarkMode ? "#4b5563" : "#cbd5e1"}`,
+          border: `2px dashed ${dragActive ? "#3b82f6" : "#cbd5e1"}`,
           borderRadius: "12px",
           padding: "32px",
           textAlign: "center",
           backgroundColor: dragActive
-            ? isDarkMode
-              ? "rgba(59, 130, 246, 0.1)"
-              : "#f0f9ff"
+            ? "#f0f9ff"
             : hasData
-            ? isDarkMode
-              ? "rgba(5, 150, 105, 0.1)"
-              : "#f0fdf4"
-            : isDarkMode
-            ? "#374151"
+            ? "#f0fdf4"
             : "#f8fafc",
           transition: "all 0.3s ease",
           position: "relative",
@@ -509,7 +430,7 @@ const ExcelUploadSection = ({ isDarkMode }) => {
             <p
               style={{
                 fontSize: "0.8rem",
-                color: isDarkMode ? "#94a3b8" : "#64748b",
+                color: "#64748b",
               }}
             >
               Please wait while we process your file
@@ -525,7 +446,7 @@ const ExcelUploadSection = ({ isDarkMode }) => {
             </p>
             <p
               style={{
-                color: isDarkMode ? "#94a3b8" : "#6b7280",
+                color: "#6b7280",
                 fontSize: "0.9rem",
                 marginBottom: "12px",
               }}
@@ -543,10 +464,10 @@ const ExcelUploadSection = ({ isDarkMode }) => {
             >
               <div
                 style={{
-                  backgroundColor: isDarkMode ? "#4b5563" : "white",
+                  backgroundColor: "white",
                   padding: "12px 20px",
                   borderRadius: "8px",
-                  border: `1px solid ${isDarkMode ? "#6b7280" : "#e2e8f0"}`,
+                  border: "1px solid #e2e8f0",
                 }}
               >
                 <div
@@ -561,7 +482,7 @@ const ExcelUploadSection = ({ isDarkMode }) => {
                 <div
                   style={{
                     fontSize: "0.8rem",
-                    color: isDarkMode ? "#94a3b8" : "#64748b",
+                    color: "#64748b",
                   }}
                 >
                   Sheets
@@ -569,10 +490,10 @@ const ExcelUploadSection = ({ isDarkMode }) => {
               </div>
               <div
                 style={{
-                  backgroundColor: isDarkMode ? "#4b5563" : "white",
+                  backgroundColor: "white",
                   padding: "12px 20px",
                   borderRadius: "8px",
-                  border: `1px solid ${isDarkMode ? "#6b7280" : "#e2e8f0"}`,
+                  border: "1px solid #e2e8f0",
                 }}
               >
                 <div
@@ -587,7 +508,7 @@ const ExcelUploadSection = ({ isDarkMode }) => {
                 <div
                   style={{
                     fontSize: "0.8rem",
-                    color: isDarkMode ? "#94a3b8" : "#64748b",
+                    color: "#64748b",
                   }}
                 >
                   Total Rows
@@ -596,7 +517,6 @@ const ExcelUploadSection = ({ isDarkMode }) => {
             </div>
             <button
               onClick={() => {
-                console.log("📁 User clicked to upload different file");
                 document.getElementById("excel-file-input").click();
               }}
               style={{
@@ -620,14 +540,14 @@ const ExcelUploadSection = ({ isDarkMode }) => {
                 fontSize: "1.1rem",
                 fontWeight: 600,
                 marginBottom: "8px",
-                color: isDarkMode ? "#f1f5f9" : "#374151",
+                color: "#374151",
               }}
             >
               Upload Excel File
             </p>
             <p
               style={{
-                color: isDarkMode ? "#94a3b8" : "#6b7280",
+                color: "#6b7280",
                 marginBottom: "16px",
                 fontSize: "0.9rem",
               }}
@@ -636,7 +556,6 @@ const ExcelUploadSection = ({ isDarkMode }) => {
             </p>
             <button
               onClick={() => {
-                console.log("📁 User clicked to choose file");
                 document.getElementById("excel-file-input").click();
               }}
               style={{
@@ -670,10 +589,10 @@ const ExcelUploadSection = ({ isDarkMode }) => {
           style={{
             marginTop: "16px",
             padding: "12px",
-            backgroundColor: isDarkMode ? "#7f1d1d" : "#fef2f2",
-            border: `1px solid ${isDarkMode ? "#991b1b" : "#fecaca"}`,
+            backgroundColor: "#fef2f2",
+            border: "1px solid #fecaca",
             borderRadius: "8px",
-            color: isDarkMode ? "#fca5a5" : "#dc2626",
+            color: "#dc2626",
             fontSize: "0.875rem",
           }}
         >
@@ -687,8 +606,8 @@ const ExcelUploadSection = ({ isDarkMode }) => {
           style={{
             marginTop: "24px",
             padding: "16px",
-            backgroundColor: isDarkMode ? "#1e3a8a" : "#f0f9ff",
-            border: `1px solid ${isDarkMode ? "#1d4ed8" : "#bfdbfe"}`,
+            backgroundColor: "#f0f9ff",
+            border: "1px solid #bfdbfe",
             borderRadius: "12px",
           }}
         >
@@ -697,7 +616,7 @@ const ExcelUploadSection = ({ isDarkMode }) => {
               fontSize: "0.9rem",
               fontWeight: 600,
               marginBottom: "12px",
-              color: isDarkMode ? "#f1f5f9" : "#1e293b",
+              color: "#1e293b",
             }}
           >
             🔄 Data Flow Status
@@ -705,7 +624,7 @@ const ExcelUploadSection = ({ isDarkMode }) => {
           <div
             style={{
               fontSize: "0.8rem",
-              color: isDarkMode ? "#94a3b8" : "#64748b",
+              color: "#64748b",
               lineHeight: 1.6,
             }}
           >
@@ -752,7 +671,6 @@ function EnhancedUIDAIDashboard() {
   const notifications = useSelector(selectNotifications);
   const showNotifications = useSelector(selectShowNotifications);
   const stats = useSelector(selectStats);
-  const isDarkMode = useSelector(selectIsDarkMode);
   const showQuickTips = useSelector(selectShowQuickTips);
   const currentTip = useSelector(selectCurrentTip);
   const showSearch = useSelector(selectShowSearch);
@@ -973,10 +891,6 @@ function EnhancedUIDAIDashboard() {
     dispatch(toggleNotifications());
   }, [dispatch]);
 
-  const handleToggleDarkMode = useCallback(() => {
-    dispatch(toggleDarkMode());
-  }, [dispatch]);
-
   const handleToggleQuickTips = useCallback(() => {
     dispatch(toggleQuickTips());
   }, [dispatch]);
@@ -991,10 +905,8 @@ function EnhancedUIDAIDashboard() {
 
   const containerStyle = {
     minHeight: "100vh",
-    background: isDarkMode
-      ? "linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%)"
-      : "linear-gradient(135deg, #f8fafc 0%, #e2e8f0 50%, #cbd5e1 100%)",
-    color: isDarkMode ? "white" : "#1e293b",
+    background: "linear-gradient(135deg, #f8fafc 0%, #e2e8f0 50%, #cbd5e1 100%)",
+    color: "#1e293b",
     fontFamily:
       '"Inter", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
     display: "flex",
@@ -1009,13 +921,7 @@ function EnhancedUIDAIDashboard() {
     left: 0,
     right: 0,
     bottom: 0,
-    background: isDarkMode
-      ? `
-      radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
-      radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.15) 0%, transparent 50%),
-      radial-gradient(circle at 40% 40%, rgba(120, 219, 255, 0.1) 0%, transparent 50%)
-    `
-      : `
+    background: `
       radial-gradient(circle at 20% 80%, rgba(59, 130, 246, 0.1) 0%, transparent 50%),
       radial-gradient(circle at 80% 20%, rgba(139, 92, 246, 0.08) 0%, transparent 50%)
     `,
@@ -1028,23 +934,17 @@ function EnhancedUIDAIDashboard() {
 
   const navbarStyle = {
     width: "100%",
-    backgroundColor: isDarkMode
-      ? "rgba(55, 65, 81, 0.95)"
-      : "rgba(255, 255, 255, 0.98)",
+    backgroundColor: "rgba(255, 255, 255, 0.98)",
     backdropFilter: "blur(20px)",
-    borderBottom: `1px solid ${
-      isDarkMode ? "rgba(75, 85, 99, 0.3)" : "rgba(203, 213, 225, 0.5)"
-    }`,
-    color: isDarkMode ? "#f1f5f9" : "#1e293b",
+    borderBottom: "1px solid rgba(203, 213, 225, 0.5)",
+    color: "#1e293b",
     padding: "16px 20px",
     position: "relative",
     zIndex: 10,
-    boxShadow: isDarkMode
-      ? "0 4px 25px -12px rgba(0, 0, 0, 0.4)"
-      : "0 4px 25px -12px rgba(0, 0, 0, 0.25)",
+    boxShadow: "0 4px 25px -12px rgba(0, 0, 0, 0.25)",
   };
 
-  // Search Modal Styles (Updated for dark mode)
+  // Search Modal Styles
   const searchModalStyle = {
     position: "fixed",
     top: 0,
@@ -1059,7 +959,7 @@ function EnhancedUIDAIDashboard() {
   };
 
   const searchBoxStyle = {
-    backgroundColor: isDarkMode ? "#374151" : "white",
+    backgroundColor: "white",
     borderRadius: "16px",
     padding: "24px",
     width: "90%",
@@ -1071,12 +971,12 @@ function EnhancedUIDAIDashboard() {
     width: "100%",
     padding: "16px",
     fontSize: "1.1rem",
-    border: `2px solid ${isDarkMode ? "#4b5563" : "#e2e8f0"}`,
+    border: "2px solid #e2e8f0",
     borderRadius: "12px",
     outline: "none",
     marginBottom: "16px",
-    backgroundColor: isDarkMode ? "#1f2937" : "white",
-    color: isDarkMode ? "#f1f5f9" : "#1e293b",
+    backgroundColor: "white",
+    color: "#1e293b",
   };
 
   const mainContentStyle = {
@@ -1088,30 +988,18 @@ function EnhancedUIDAIDashboard() {
   };
 
   const toolCardStyle = (tool) => ({
-    background: isDarkMode
-      ? hoveredCard === tool.id
-        ? "linear-gradient(135deg, rgba(55, 65, 81, 0.98) 0%, rgba(75, 85, 99, 0.95) 100%)"
-        : "rgba(55, 65, 81, 0.95)"
-      : hoveredCard === tool.id
+    background: hoveredCard === tool.id
       ? "linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 250, 252, 0.95) 100%)"
       : "rgba(255, 255, 255, 0.95)",
     backdropFilter: "blur(20px)",
     borderRadius: "20px",
     padding: "32px",
     border: `1px solid ${
-      hoveredCard === tool.id
-        ? "#3b82f6"
-        : isDarkMode
-        ? "rgba(75, 85, 99, 0.3)"
-        : "rgba(255, 255, 255, 0.2)"
+      hoveredCard === tool.id ? "#3b82f6" : "rgba(255, 255, 255, 0.2)"
     }`,
     boxShadow:
       hoveredCard === tool.id
-        ? isDarkMode
-          ? "0 25px 50px -12px rgba(59, 130, 246, 0.4)"
-          : "0 25px 50px -12px rgba(59, 130, 246, 0.25)"
-        : isDarkMode
-        ? "0 20px 40px -12px rgba(0, 0, 0, 0.3)"
+        ? "0 25px 50px -12px rgba(59, 130, 246, 0.25)"
         : "0 20px 40px -12px rgba(0, 0, 0, 0.15)",
     transform: hoveredCard === tool.id ? "translateY(-8px)" : "translateY(0)",
     transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
@@ -1129,13 +1017,13 @@ function EnhancedUIDAIDashboard() {
   const toolTitleStyle = {
     fontSize: "1.5rem",
     fontWeight: 700,
-    color: isDarkMode ? "#f1f5f9" : "#1e293b",
+    color: "#1e293b",
     marginBottom: "12px",
     lineHeight: 1.2,
   };
 
   const toolDescriptionStyle = {
-    color: isDarkMode ? "#94a3b8" : "#64748b",
+    color: "#64748b",
     fontSize: "0.95rem",
     lineHeight: 1.6,
     marginBottom: "20px",
@@ -1144,8 +1032,8 @@ function EnhancedUIDAIDashboard() {
   const toolTagStyle = {
     display: "inline-block",
     padding: "6px 12px",
-    backgroundColor: isDarkMode ? "#4b5563" : "#f1f5f9",
-    color: isDarkMode ? "#d1d5db" : "#475569",
+    backgroundColor: "#f1f5f9",
+    color: "#475569",
     borderRadius: "20px",
     fontSize: "0.8rem",
     fontWeight: 600,
@@ -1160,43 +1048,17 @@ function EnhancedUIDAIDashboard() {
     borderRadius: "8px",
     fontSize: "0.8rem",
     fontWeight: 500,
-    backgroundColor:
-      status === "ready"
-        ? isDarkMode
-          ? "#064e3b"
-          : "#f0fdf4"
-        : isDarkMode
-        ? "#92400e"
-        : "#fef3c7",
-    color:
-      status === "ready"
-        ? isDarkMode
-          ? "#34d399"
-          : "#059669"
-        : isDarkMode
-        ? "#fbbf24"
-        : "#d97706",
-    border: `1px solid ${
-      status === "ready"
-        ? isDarkMode
-          ? "#065f46"
-          : "#bbf7d0"
-        : isDarkMode
-        ? "#d97706"
-        : "#fcd34d"
-    }`,
+    backgroundColor: status === "ready" ? "#f0fdf4" : "#fef3c7",
+    color: status === "ready" ? "#059669" : "#d97706",
+    border: `1px solid ${status === "ready" ? "#bbf7d0" : "#fcd34d"}`,
   });
 
   const categoryFilterStyle = (category, isActive) => ({
     padding: "8px 16px",
     borderRadius: "20px",
     border: "none",
-    backgroundColor: isActive
-      ? "#3b82f6"
-      : isDarkMode
-      ? "rgba(55, 65, 81, 0.8)"
-      : "rgba(255, 255, 255, 0.8)",
-    color: isActive ? "white" : isDarkMode ? "#d1d5db" : "#64748b",
+    backgroundColor: isActive ? "#3b82f6" : "rgba(255, 255, 255, 0.8)",
+    color: isActive ? "white" : "#64748b",
     fontSize: "0.875rem",
     fontWeight: 600,
     cursor: "pointer",
@@ -1229,7 +1091,7 @@ function EnhancedUIDAIDashboard() {
           <div
             style={{
               fontSize: "0.875rem",
-              color: isDarkMode ? "#9ca3af" : "#64748b",
+              color: "#64748b",
             }}
           >
             Press <kbd>Escape</kbd> to close
@@ -1246,7 +1108,7 @@ function EnhancedUIDAIDashboard() {
             alignItems: isMobile ? "center" : "center",
             justifyContent: "space-between",
             gap: isMobile ? "12px" : "16px",
-            width: "100%",
+            width: "96%",
           }}
         >
           {/* Left Section - Brand with tri-color */}
@@ -1286,7 +1148,7 @@ function EnhancedUIDAIDashboard() {
               {!isMobile && (
                 <p
                   style={{
-                    color: isDarkMode ? "#94a3b8" : "#64748b",
+                    color: "#64748b",
                     fontSize: "0.85rem",
                     margin: 0,
                     lineHeight: 1.4,
@@ -1314,61 +1176,17 @@ function EnhancedUIDAIDashboard() {
             <div
               style={{
                 fontSize: "0.75rem",
-                color: isDarkMode ? "#94a3b8" : "#64748b",
+                color: "#64748b",
                 fontWeight: 600,
                 padding: "6px 10px",
-                backgroundColor: isDarkMode
-                  ? "rgba(75, 85, 99, 0.8)"
-                  : "rgba(248, 250, 252, 0.8)",
+                backgroundColor: "rgba(248, 250, 252, 0.8)",
                 borderRadius: "6px",
-                border: `1px solid ${
-                  isDarkMode ? "rgba(107, 114, 128, 0.3)" : "rgba(203, 213, 225, 0.3)"
-                }`,
+                border: "1px solid rgba(203, 213, 225, 0.3)",
                 whiteSpace: "nowrap",
               }}
             >
               🕒 {currentTime}
             </div>
-
-            {/* Theme Toggle */}
-            <button
-              onClick={handleToggleDarkMode}
-              style={{
-                padding: "6px 10px",
-                backgroundColor: isDarkMode ? "#374151" : "#f3f4f6",
-                color: isDarkMode ? "#d1d5db" : "#374151",
-                border: `1px solid ${
-                  isDarkMode ? "rgba(107, 114, 128, 0.3)" : "rgba(203, 213, 225, 0.3)"
-                }`,
-                borderRadius: "6px",
-                fontSize: "0.75rem",
-                cursor: "pointer",
-                transition: "all 0.2s ease",
-                fontWeight: 600,
-                whiteSpace: "nowrap",
-              }}
-            >
-              {isDarkMode ? "🌙" : "☀️"}
-            </button>
-
-            {/* Search Button */}
-            <button
-              onClick={handleToggleSearch}
-              style={{
-                padding: "6px 10px",
-                backgroundColor: "#3b82f6",
-                color: "white",
-                border: "none",
-                borderRadius: "6px",
-                fontSize: "0.75rem",
-                cursor: "pointer",
-                transition: "all 0.2s ease",
-                fontWeight: 600,
-                whiteSpace: "nowrap",
-              }}
-            >
-              🔍
-            </button>
           </div>
         </div>
       </div>
@@ -1376,7 +1194,7 @@ function EnhancedUIDAIDashboard() {
       {/* Main Content */}
       <div style={mainContentStyle}>
         {/* Global Data Management Hub */}
-        <ExcelUploadSection isDarkMode={isDarkMode} />
+        <ExcelUploadSection />
 
         {/* Category Filters */}
         <div
@@ -1445,14 +1263,7 @@ function EnhancedUIDAIDashboard() {
                     width: "8px",
                     height: "8px",
                     borderRadius: "50%",
-                    backgroundColor:
-                      tool.dataStatus === "ready"
-                        ? isDarkMode
-                          ? "#34d399"
-                          : "#10b981"
-                        : isDarkMode
-                        ? "#fbbf24"
-                        : "#f59e0b",
+                    backgroundColor: tool.dataStatus === "ready" ? "#10b981" : "#f59e0b",
                   }}
                 ></div>
                 {tool.statusText}
@@ -1467,9 +1278,7 @@ function EnhancedUIDAIDashboard() {
                     left: 0,
                     right: 0,
                     bottom: 0,
-                    background: isDarkMode
-                      ? "linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(139, 92, 246, 0.05) 100%)"
-                      : "linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(139, 92, 246, 0.05) 100%)",
+                    background: "linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(139, 92, 246, 0.05) 100%)",
                     borderRadius: "20px",
                     pointerEvents: "none",
                   }}
@@ -1483,25 +1292,19 @@ function EnhancedUIDAIDashboard() {
         {recentActivity.length > 0 && (
           <div
             style={{
-              background: isDarkMode
-                ? "rgba(55, 65, 81, 0.95)"
-                : "rgba(255, 255, 255, 0.95)",
+              background: "rgba(255, 255, 255, 0.95)",
               backdropFilter: "blur(20px)",
               borderRadius: "20px",
               padding: "32px",
-              border: `1px solid ${
-                isDarkMode ? "rgba(75, 85, 99, 0.3)" : "rgba(255, 255, 255, 0.2)"
-              }`,
-              boxShadow: isDarkMode
-                ? "0 20px 40px -12px rgba(0, 0, 0, 0.3)"
-                : "0 20px 40px -12px rgba(0, 0, 0, 0.15)",
+              border: "1px solid rgba(255, 255, 255, 0.2)",
+              boxShadow: "0 20px 40px -12px rgba(0, 0, 0, 0.15)",
             }}
           >
             <h3
               style={{
                 fontSize: "1.5rem",
                 fontWeight: 700,
-                color: isDarkMode ? "#f1f5f9" : "#1e293b",
+                color: "#1e293b",
                 marginBottom: "24px",
               }}
             >
@@ -1516,7 +1319,7 @@ function EnhancedUIDAIDashboard() {
                     alignItems: "center",
                     gap: "16px",
                     padding: "16px",
-                    backgroundColor: isDarkMode ? "#4b5563" : "#f8fafc",
+                    backgroundColor: "#f8fafc",
                     borderRadius: "12px",
                     marginBottom: "12px",
                   }}
@@ -1527,7 +1330,7 @@ function EnhancedUIDAIDashboard() {
                       style={{
                         fontSize: "0.9rem",
                         fontWeight: 600,
-                        color: isDarkMode ? "#f3f4f6" : "#374151",
+                        color: "#374151",
                         marginBottom: "4px",
                       }}
                     >
@@ -1536,7 +1339,7 @@ function EnhancedUIDAIDashboard() {
                     <div
                       style={{
                         fontSize: "0.8rem",
-                        color: isDarkMode ? "#94a3b8" : "#64748b",
+                        color: "#64748b",
                       }}
                     >
                       {activity.timestamp}
@@ -1554,15 +1357,13 @@ function EnhancedUIDAIDashboard() {
             textAlign: "center",
             marginTop: "40px",
             padding: "20px",
-            borderTop: `1px solid ${
-              isDarkMode ? "rgba(75, 85, 99, 0.3)" : "rgba(203, 213, 225, 0.3)"
-            }`,
+            borderTop: "1px solid rgba(203, 213, 225, 0.3)",
           }}
         >
           <div
             style={{
               fontSize: "0.75rem",
-              color: isDarkMode ? "#6b7280" : "#9ca3af",
+              color: "#9ca3af",
             }}
           >
             Suvidha Setu v1.0 - Advanced Financial Calculation Suite
