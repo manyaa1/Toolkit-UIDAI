@@ -12,11 +12,9 @@ import {
   ArrowLeft,
   Calculator,
   Package,
-  Clock,
   CheckCircle,
   AlertCircle,
   Trash2,
-  Eye,
   Settings,
 } from "lucide-react";
 import * as XLSX from "xlsx";
@@ -24,7 +22,6 @@ import VirtualDataTable from "../components/VirtualDataTable";
 import WarrantyChartsView from "../components/WarrantyChartsView";
 import {
   storeWarrantyCalculations,
-  clearWarrantyData,
 } from "../store/slice/warrantyDataSlice";
 import {
   selectExcelData,
@@ -157,22 +154,6 @@ const spinKeyframes = `
       JAS: [new Date(year + 1, 6, 5), new Date(year + 1, 9, 4)], // Jul 5 - Oct 4
     };
   }, []);
-
-  const getQuarterNameAndDates = useCallback(
-    (dt) => {
-      // Try current, previous, and next year to catch all overlaps
-      for (let y = dt.getFullYear() - 1; y <= dt.getFullYear() + 1; y++) {
-        const quarters = getQuarterDates(y);
-        for (const [qName, [start, end]] of Object.entries(quarters)) {
-          if (start <= dt && dt <= end) {
-            return { quarter: qName, start, end };
-          }
-        }
-      }
-      return { quarter: null, start: null, end: null };
-    },
-    [getQuarterDates]
-  );
 
   const calculateWarrantySchedule = useCallback(
     (startDate, cost, gstRate = 0.18, warrantyPercent = 0.15, years = 3) => {
@@ -666,7 +647,7 @@ const spinKeyframes = `
           const warrantyStart = new Date(product.warrantyStart);
           const totalCost = product.cost;
 
-          const { schedule, splitDetails } = calculateWarrantySchedule(
+          const { schedule } = calculateWarrantySchedule(
             warrantyStart,
             totalCost,
             0.18, 
@@ -791,7 +772,6 @@ const spinKeyframes = `
 
         setActiveTab("schedule");
       } catch (error) {
-        console.error("Error calculating warranty schedule:", error);
         alert("Error calculating warranty schedule. Please check your data.");
       } finally {
         setIsCalculating(false);
@@ -906,7 +886,6 @@ const spinKeyframes = `
         // Write file
         XLSX.writeFile(wb, fileName);
       } catch (error) {
-        console.error("Export error:", error);
         alert("Error exporting to Excel. Please try again.");
       }
     }, [calculatedSchedule, showGST]);

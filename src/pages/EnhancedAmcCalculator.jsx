@@ -14,7 +14,6 @@ import {
   selectHasData,
   selectFileName,
 } from "../store/selectors/excelSelectors";
-import { processExcelFile } from "../store/slice/excelSlice";
 
 // Manual Product Form Component
 const ManualProductForm = ({ onAddProduct }) => {
@@ -628,11 +627,6 @@ const excelEpoch = new Date(1900, 0, 1);
       );
       return;
     }
-
-    //if (isCalculating) {
-    //  console.log("❌ Already calculating");
-    //  return;
-    //}
 
     if (!workerReady) {
       
