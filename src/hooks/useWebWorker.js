@@ -36,17 +36,14 @@ export const useWebWorker = (workerPath, options = {}) => {
 
       // Handle worker errors
       worker.onerror = (event) => {
-        console.error("Worker error:", event);
         setError(event.message || "Worker error");
         setIsReady(false);
       };
 
       worker.onmessageerror = (event) => {
-        console.error("Worker message error:", event);
         setError("Worker communication error");
       };
     } catch (err) {
-      console.error("Failed to create worker:", err);
       setError("Failed to initialize worker");
     }
 
@@ -89,7 +86,6 @@ export const useWebWorker = (workerPath, options = {}) => {
       workerRef.current.postMessage({ type, data });
       return true;
     } catch (err) {
-      console.error("Failed to send message to worker:", err);
       setError("Failed to communicate with worker");
       return false;
     }
@@ -151,14 +147,6 @@ export const useAMCCalculationWorker = () => {
         const absoluteProcessed =
           chunksCompleted * chunkSize + currentChunkProgress;
 
-        console.log("📊 Progress update:", {
-          chunkIndex: data.chunkIndex,
-          chunkProgress: data.processed,
-          totalChunks: prev.totalChunks,
-          absoluteProcessed,
-          total: prev.total,
-        });
-
         return {
           ...prev,
           processed: Math.min(absoluteProcessed, prev.total), // Don't exceed total
@@ -200,14 +188,6 @@ export const useAMCCalculationWorker = () => {
           prev.total
         );
 
-        console.log("✅ Chunk completed:", {
-          chunkIndex: data.chunkIndex,
-          completedChunks,
-          totalChunks: data.totalChunks,
-          processedCount,
-          isFinished: completedChunks >= data.totalChunks,
-        });
-
         const isFinished = completedChunks >= data.totalChunks;
 
         return {
@@ -221,7 +201,6 @@ export const useAMCCalculationWorker = () => {
     });
 
     const unsubscribeError = on("ERROR", (data) => {
-      console.error("❌ Worker error:", data.error);
       setProgress((prev) => ({
         ...prev,
         isProcessing: false,

@@ -46,7 +46,7 @@ export const useCalculationCache = () => {
         fileCache.getAll(),
       ]);
 
-      setRecentCalculations(calculations.slice(0, 10)); // Last 10 calculations
+      setRecentCalculations(calculations.slice(0, 10)); 
       setRecentFiles(files.slice(0, 10)); // Last 10 files
     } catch (error) {
       console.error("Error loading recent data:", error);
@@ -290,7 +290,7 @@ export const useAMCCache = (fileData, settings) => {
   const cache = useCalculationCache();
   const [cacheKey, setCacheKey] = useState(null);
   const [cachedResult, setCachedResult] = useState(null);
-  const [cacheStatus, setCacheStatus] = useState("checking"); // checking, hit, miss, storing, error
+  const [cacheStatus, setCacheStatus] = useState("checking"); 
 
   // Generate cache key when file data or settings change
   useEffect(() => {
@@ -348,7 +348,6 @@ export const useAMCCache = (fileData, settings) => {
 
         return stored;
       } catch (error) {
-        console.error("Error storing cached result:", error);
         setCacheStatus("error");
         return null;
       }

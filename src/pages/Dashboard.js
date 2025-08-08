@@ -2,107 +2,80 @@
 import React, { useEffect, useCallback, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
-import * as XLSX from "xlsx";
 
 // Redux Actions
 import {
   processExcelFile,
   loadExcelFromMemory,
-  setActiveSheet,
   clearData as clearExcelData,
 } from "../store/slice/excelSlice";
 
 import {
-  storeAMCCalculations,
+
   loadAMCFromMemory,
   clearData,
 } from "../store/slice/amcScheduleSlice";
 
 import {
-  storeWarrantyCalculations,
+  
   loadWarrantyFromMemory,
   clearWarrantyData,
 } from "../store/slice/warrantyDataSlice";
 
 import {
   setHoveredCard,
-  setHoveredButton,
-  setHoveredLink,
   setIsMobile,
   setCurrentTime,
   setSearchTerm,
   setSelectedCategory,
   toggleNotifications,
   updateStats,
-  toggleQuickTips,
-  setCurrentTip,
   nextTip,
   setShowSearch,
-  toggleSearch,
 } from "../store/slice/dashboardSlice";
 
 // Redux Selectors
 import {
-  selectExcelData,
+ 
   selectFileName,
   selectSheets,
-  selectActiveSheet,
   selectIsLoading,
   selectError,
-  selectUploadHistory,
   selectHasData,
   selectTotalRows,
-  selectSheetData,
 } from "../store/selectors/excelSelectors";
 
 import {
-  selectAMCCalculations,
-  selectAMCMetadata,
-  selectAMCHistory,
-  selectAMCIsProcessing,
   selectHasAMCData,
   selectTotalAMCAssets,
   selectTotalAMCValue,
-  selectAMCCalculationsForPayments,
 } from "../store/selectors/amcDataSelectors";
 
 import {
-  selectWarrantyCalculations,
-  selectWarrantyMetadata,
-  selectWarrantyHistory,
-  selectWarrantyIsProcessing,
   selectHasWarrantyData,
   selectTotalWarrantyAssets,
   selectTotalWarrantyValue,
-  selectWarrantyCalculationsForPayments,
 } from "../store/selectors/warrantyDataSelectors";
 
 import {
   selectHoveredCard,
-  selectHoveredButton,
-  selectHoveredLink,
   selectIsMobile,
   selectCurrentTime,
   selectSearchTerm,
   selectSelectedCategory,
-  selectNotifications,
-  selectShowNotifications,
   selectStats,
-  selectShowQuickTips,
-  selectCurrentTip,
   selectShowSearch,
   selectRecentActivity,
   selectFilteredTools,
 } from "../store/selectors/dashboardSelectors";
 
-// ================================
 // EXCEL UPLOAD SECTION COMPONENT (Redux Version)
-// ================================
+
 const ExcelUploadSection = () => {
   const dispatch = useDispatch();
 
   // Excel selectors
-  const excelData = useSelector(selectExcelData);
+  //const excelData = useSelector(selectExcelData);
   const fileName = useSelector(selectFileName);
   const sheets = useSelector(selectSheets);
   const isLoading = useSelector(selectIsLoading);
@@ -653,37 +626,28 @@ const ExcelUploadSection = () => {
   );
 };
 
-// ================================
 // MAIN DASHBOARD COMPONENT (Redux Version)
-// ================================
+
 function EnhancedUIDAIDashboard() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
   // Dashboard selectors
   const hoveredCard = useSelector(selectHoveredCard);
-  const hoveredButton = useSelector(selectHoveredButton);
-  const hoveredLink = useSelector(selectHoveredLink);
   const isMobile = useSelector(selectIsMobile);
   const currentTime = useSelector(selectCurrentTime);
   const searchTerm = useSelector(selectSearchTerm);
   const selectedCategory = useSelector(selectSelectedCategory);
-  const notifications = useSelector(selectNotifications);
-  const showNotifications = useSelector(selectShowNotifications);
   const stats = useSelector(selectStats);
-  const showQuickTips = useSelector(selectShowQuickTips);
-  const currentTip = useSelector(selectCurrentTip);
   const showSearch = useSelector(selectShowSearch);
   const recentActivity = useSelector(selectRecentActivity);
 
   // Data selectors for global context
   const hasExcelData = useSelector(selectHasData);
   const hasAMCData = useSelector(selectHasAMCData);
-  const totalAMCAssets = useSelector(selectTotalAMCAssets);
-  const totalAMCValue = useSelector(selectTotalAMCValue);
+  const totalAMCAssets = useSelector(selectTotalAMCAssets); 
   const hasWarrantyData = useSelector(selectHasWarrantyData);
   const totalWarrantyAssets = useSelector(selectTotalWarrantyAssets);
-  const totalWarrantyValue = useSelector(selectTotalWarrantyValue);
 
   useEffect(() => {
     const savedExcel = localStorage.getItem("excelData");
@@ -851,28 +815,6 @@ function EnhancedUIDAIDashboard() {
     dispatch(setHoveredCard(null));
   }, [dispatch]);
 
-  const handleMouseEnterButton = useCallback(
-    (buttonId) => {
-      dispatch(setHoveredButton(buttonId));
-    },
-    [dispatch]
-  );
-
-  const handleMouseLeaveButton = useCallback(() => {
-    dispatch(setHoveredButton(null));
-  }, [dispatch]);
-
-  const handleMouseEnterLink = useCallback(
-    (linkId) => {
-      dispatch(setHoveredLink(linkId));
-    },
-    [dispatch]
-  );
-
-  const handleMouseLeaveLink = useCallback(() => {
-    dispatch(setHoveredLink(null));
-  }, [dispatch]);
-
   const handleSearchChange = useCallback(
     (e) => {
       dispatch(setSearchTerm(e.target.value));
@@ -887,21 +829,8 @@ function EnhancedUIDAIDashboard() {
     [dispatch]
   );
 
-  const handleToggleNotifications = useCallback(() => {
-    dispatch(toggleNotifications());
-  }, [dispatch]);
-
-  const handleToggleQuickTips = useCallback(() => {
-    dispatch(toggleQuickTips());
-  }, [dispatch]);
-
-  const handleToggleSearch = useCallback(() => {
-    dispatch(toggleSearch());
-  }, [dispatch]);
-
-  // ================================
   // COMPREHENSIVE STYLING SYSTEM
-  // ================================
+ 
 
   const containerStyle = {
     minHeight: "100vh",
