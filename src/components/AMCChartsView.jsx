@@ -1,6 +1,6 @@
 // AMC Charts View Component - Multiple chart visualizations with hover effects
 import React, { useMemo, useState } from "react";
-import { Card, Select, Row, Col, Statistic } from "antd";
+import { Card, Select, Row, Col, Statistic, InputNumber } from "antd";
 
 const { Option } = Select;
 
@@ -496,7 +496,7 @@ const PieChart = ({ data, title, width = 400, height = 400 }) => {
 
   return (
     <Card title={title} style={{ marginBottom: 24 }}>
-      <div style={{ display: "flex", alignItems: "center", position: 'relative' }}>
+      <div style={{ display: "flex", alignItems: "center", position: 'relative', justifyContent: 'center' }}>
         <svg 
           width={width} 
           height={height}
@@ -654,6 +654,7 @@ const PieChart = ({ data, title, width = 400, height = 400 }) => {
 const AMCChartsView = ({ data, quarterTotals, yearTotals, rawResults }) => {
   const [selectedChart, setSelectedChart] = useState("overview");
   const [selectedYear, setSelectedYear] = useState("all");
+  const [quartersToShow, setQuartersToShow] = useState(8); // New state for number of quarters
 
   // Process data for charts
   const chartData = useMemo(() => {
@@ -733,17 +734,16 @@ const AMCChartsView = ({ data, quarterTotals, yearTotals, rawResults }) => {
     );
   }
 
-  // Summary statistics (based on filtered quarterly data)
-  const totalAMC = chartData.quarterly.reduce((sum, q) => sum + q.value, 0);
-  const avgQuarterly =
-    chartData.quarterly.length > 0 ? totalAMC / chartData.quarterly.length : 0;
-  const highestQuarter =
-    chartData.quarterly.length > 0
-      ? chartData.quarterly.reduce(
-          (max, q) => (q.value > max.value ? q : max),
-          chartData.quarterly[0]
-        )
-      : { label: "N/A", value: 0 };
+  // Summary statistics (based on filtered quarterly data and quarters to show)
+  const displayedQuarters = chartData.quarterly.slice(0, quartersToShow);
+  const totalAMC = displayedQuarters.reduce((sum, q) => sum + q.value, 0);
+  const avgQuarterly = displayedQuarters.length > 0 ? totalAMC / displayedQuarters.length : 0;
+  const highestQuarter = displayedQuarters.length > 0
+    ? displayedQuarters.reduce(
+        (max, q) => (q.value > max.value ? q : max),
+        displayedQuarters[0]
+      )
+    : { label: "N/A", value: 0 };
 
   return (
     <div style={{ padding: "0 20px" }}>
@@ -789,6 +789,24 @@ const AMCChartsView = ({ data, quarterTotals, yearTotals, rawResults }) => {
             </Select>
           </>
         )}
+
+        {/* Quarters to Show Filter - Show only for quarterly and overview charts */}
+        {(selectedChart === "quarterly" || selectedChart === "overview") && (
+          <>
+            <span style={{ fontWeight: 600, color: "#374151" }}>Show Quarters:</span>
+            <InputNumber
+              min={1}
+              max={chartData.quarterly.length}
+              value={quartersToShow}
+              onChange={setQuartersToShow}
+              style={{ width: 100 }}
+              placeholder="Quarters"
+            />
+            <span style={{ color: "#64748b", fontSize: "0.875rem" }}>
+              (Max: {chartData.quarterly.length})
+            </span>
+          </>
+        )}
       </div>
 
       {/* Summary Cards */}
@@ -798,8 +816,8 @@ const AMCChartsView = ({ data, quarterTotals, yearTotals, rawResults }) => {
             <Statistic
               title={
                 selectedYear === "all"
-                  ? "Total AMC Value"
-                  : `Total AMC Value (${selectedYear})`
+                  ? `Total AMC Value (${displayedQuarters.length} quarters)`
+                  : `Total AMC Value (${selectedYear} - ${displayedQuarters.length} quarters)`
               }
               value={totalAMC}
               formatter={(value) => formatIndianCurrency(value)}
@@ -840,10 +858,10 @@ const AMCChartsView = ({ data, quarterTotals, yearTotals, rawResults }) => {
             <Statistic
               title={
                 selectedYear === "all"
-                  ? "Total Quarters"
+                  ? "Displaying Quarters"
                   : `Quarters in ${selectedYear}`
               }
-              value={chartData.quarterly.length}
+              value={displayedQuarters.length}
               suffix="quarters"
               valueStyle={{ color: "#8b5cf6" }}
             />
@@ -853,39 +871,48 @@ const AMCChartsView = ({ data, quarterTotals, yearTotals, rawResults }) => {
 
       {/* Charts */}
       {selectedChart === "overview" && (
-        <Row gutter={16}>
-          <Col span={12}>
-            <BarChart
-              data={chartData.quarterly.slice(0, 8)} // First 8 quarters
-              title={
-                selectedYear === "all"
-                  ? "Quarterly AMC Revenue (First 8 Quarters)"
-                  : `Quarterly AMC Revenue - ${selectedYear}`
-              }
-              width={600}
-              height={350}
-            />
-          </Col>
-          <Col span={12}>
-            <PieChart
-              data={chartData.yearly}
-              title="AMC Distribution by Year"
-              width={500}
-              height={350}
-            />
-          </Col>
-        </Row>
+        <div>
+          {/* Bar Chart - Full Width */}
+          <Row gutter={16}>
+            <Col span={24}>
+              <BarChart
+                data={displayedQuarters}
+                title={
+                  selectedYear === "all"
+                    ? `Quarterly AMC Revenue (Showing ${displayedQuarters.length} quarters)`
+                    : `Quarterly AMC Revenue - ${selectedYear} (Showing ${displayedQuarters.length} quarters)`
+                }
+                width={1000}
+                height={400}
+              />
+            </Col>
+          </Row>
+          
+          {/* Pie Chart - Full Width */}
+          <Row gutter={16}>
+            <Col span={24}>
+              <div style={{ display: 'flex', justifyContent: 'center' }}>
+                <PieChart
+                  data={chartData.yearly}
+                  title="AMC Distribution by Year"
+                  width={600}
+                  height={400}
+                />
+              </div>
+            </Col>
+          </Row>
+        </div>
       )}
 
       {selectedChart === "quarterly" && (
         <Row gutter={16}>
           <Col span={24}>
             <BarChart
-              data={chartData.quarterly}
+              data={displayedQuarters}
               title={
                 selectedYear === "all"
-                  ? "Complete Quarterly AMC Schedule (All Years)"
-                  : `Quarterly AMC Schedule - ${selectedYear}`
+                  ? `Quarterly AMC Schedule (Showing ${displayedQuarters.length} of ${chartData.quarterly.length} quarters)`
+                  : `Quarterly AMC Schedule - ${selectedYear} (Showing ${displayedQuarters.length} quarters)`
               }
               width={1000}
               height={400}
@@ -893,11 +920,11 @@ const AMCChartsView = ({ data, quarterTotals, yearTotals, rawResults }) => {
           </Col>
           <Col span={24}>
             <LineChart
-              data={chartData.quarterly}
+              data={displayedQuarters}
               title={
                 selectedYear === "all"
-                  ? "Quarterly AMC Trends (All Years)"
-                  : `Quarterly AMC Trends - ${selectedYear}`
+                  ? `Quarterly AMC Trends (Showing ${displayedQuarters.length} quarters)`
+                  : `Quarterly AMC Trends - ${selectedYear} (Showing ${displayedQuarters.length} quarters)`
               }
               width={1000}
               height={350}
@@ -907,24 +934,33 @@ const AMCChartsView = ({ data, quarterTotals, yearTotals, rawResults }) => {
       )}
 
       {selectedChart === "yearly" && (
-        <Row gutter={16}>
-          <Col span={12}>
-            <BarChart
-              data={chartData.yearly}
-              title="Yearly AMC Totals"
-              width={600}
-              height={400}
-            />
-          </Col>
-          <Col span={12}>
-            <PieChart
-              data={chartData.yearly}
-              title="Year-wise AMC Distribution"
-              width={500}
-              height={400}
-            />
-          </Col>
-        </Row>
+        <div>
+          {/* Bar Chart - Full Width */}
+          <Row gutter={16}>
+            <Col span={24}>
+              <BarChart
+                data={chartData.yearly}
+                title="Yearly AMC Totals"
+                width={1000}
+                height={400}
+              />
+            </Col>
+          </Row>
+          
+          {/* Pie Chart - Full Width */}
+          <Row gutter={16}>
+            <Col span={24}>
+              <div style={{ display: 'flex', justifyContent: 'center' }}>
+                <PieChart
+                  data={chartData.yearly}
+                  title="Year-wise AMC Distribution"
+                  width={600}
+                  height={400}
+                />
+              </div>
+            </Col>
+          </Row>
+        </div>
       )}
 
       {selectedChart === "products" && (
