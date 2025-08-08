@@ -1246,7 +1246,7 @@ function EnhancedUIDAIDashboard() {
             alignItems: isMobile ? "center" : "center",
             justifyContent: "space-between",
             gap: isMobile ? "12px" : "16px",
-            width: "100%",
+            width: "96%",
           }}
         >
           {/* Left Section - Brand with tri-color */}
@@ -1329,46 +1329,6 @@ function EnhancedUIDAIDashboard() {
             >
               🕒 {currentTime}
             </div>
-
-            {/* Theme Toggle */}
-            <button
-              onClick={handleToggleDarkMode}
-              style={{
-                padding: "6px 10px",
-                backgroundColor: isDarkMode ? "#374151" : "#f3f4f6",
-                color: isDarkMode ? "#d1d5db" : "#374151",
-                border: `1px solid ${
-                  isDarkMode ? "rgba(107, 114, 128, 0.3)" : "rgba(203, 213, 225, 0.3)"
-                }`,
-                borderRadius: "6px",
-                fontSize: "0.75rem",
-                cursor: "pointer",
-                transition: "all 0.2s ease",
-                fontWeight: 600,
-                whiteSpace: "nowrap",
-              }}
-            >
-              {isDarkMode ? "🌙" : "☀️"}
-            </button>
-
-            {/* Search Button */}
-            <button
-              onClick={handleToggleSearch}
-              style={{
-                padding: "6px 10px",
-                backgroundColor: "#3b82f6",
-                color: "white",
-                border: "none",
-                borderRadius: "6px",
-                fontSize: "0.75rem",
-                cursor: "pointer",
-                transition: "all 0.2s ease",
-                fontWeight: 600,
-                whiteSpace: "nowrap",
-              }}
-            >
-              🔍
-            </button>
           </div>
         </div>
       </div>
